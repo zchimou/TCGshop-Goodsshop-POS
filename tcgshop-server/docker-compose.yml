@@ -1,0 +1,12 @@
+services:
+  tcgshop-pos-sync:
+    build: .
+    pull_policy: build
+    container_name: tcgshop-pos-sync
+    restart: unless-stopped
+    environment:
+      SYNC_TOKEN: ${SYNC_TOKEN:?请在.env设置独立的随机同步密钥}
+    ports:
+      - "5689:3000"
+    volumes:
+      - ./data:/data

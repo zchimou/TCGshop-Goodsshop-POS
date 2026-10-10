@@ -1,0 +1,12 @@
+const assert=require('assert/strict'),path=require('path'),{pathToFileURL}=require('url');
+const {chromium}=require('playwright');
+(async()=>{const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{const p=await browser.newPage({viewport:{width:1440,height:1000}});await require('./test-auth.cjs').prepare(p);await p.goto(pathToFileURL(path.join(__dirname,'index.html')).href);
+ await p.locator('[data-page="products"]').click();await p.locator('[data-edit="sample-0"]').click();await p.locator('#pPrice').fill('');await p.getByRole('button',{name:'保存商品',exact:true}).click();assert.equal(await p.evaluate(()=>state.products[0].price),0);
+ await p.locator('[data-page="pos"]').click();await p.locator('[data-add="sample-0"]').click();await p.locator('#checkout').click();assert.equal(await p.locator('#dialog[open]').count(),0);assert.equal(await p.evaluate(()=>state.orders.length),0);
+ await p.locator('[data-cart-price="sample-0"]').click();await p.locator('#cartUnitPrice').fill('12.34');await p.getByRole('button',{name:'保存单价',exact:true}).click();assert.equal(await p.evaluate(()=>totals().total),1234);
+ await p.reload();assert.equal(await p.evaluate(()=>totals().total),1234);assert.equal(await p.evaluate(()=>state.products[0].price),0);
+ await p.locator('#checkout').click();await p.getByRole('button',{name:'已到账，完成收款'}).click();assert.equal(await p.evaluate(()=>state.orders[0].lines[0].price),1234);
+ assert(await p.evaluate(()=>recordReturn(state.orders[0].id,[1])));assert.equal(await p.evaluate(()=>state.orders[0].refunds[0].amount),1234);
+ const payload=await p.evaluate(()=>({schema:POSSyncCore.schema,storeId:'test-price',ledger:POSSyncCore.project(state),accounts:POSAuth.snapshot()}));require('../tcgshop-server/sync-core').validate(payload);
+ console.log('PASS: blank product price, checkout blocked until priced, per-order price survives reload, immutable sale/refund amount, NAS validation.');
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});

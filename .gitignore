@@ -1,0 +1,32 @@
+# Local secrets and business data
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.pem
+*.key
+**/data/
+**/backups/
+**/backup/
+
+# Reproducible build outputs and local runtimes
+**/out/
+**/tools/
+**/node_modules/
+**/__pycache__/
+*.pyc
+*.apk
+*.idsig
+*.zip
+*.log
+tcgshop-server/dist*/
+tcgshop-server/release*/
+历史归档/
+
+# Local UI verification screenshots
+*-fixed.png
+**/preview-*.png
+
+# Generated printer test screenshot
+pos/printer-settings.png

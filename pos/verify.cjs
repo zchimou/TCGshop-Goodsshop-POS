@@ -1,0 +1,33 @@
+const {chromium}=require('playwright');
+const {pathToFileURL}=require('url');const path=require('path');const assert=require('assert');
+(async()=>{
+ const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const page=await browser.newPage({viewport:{width:1440,height:1000},timezoneId:'Asia/Shanghai'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await require('./test-auth.cjs').prepare(page);
+ await page.goto(pathToFileURL(path.join(__dirname,'index.html')).href);
+ await page.screenshot({path:path.join(__dirname,'preview-desktop.png'),fullPage:true});
+ await page.locator('[data-add="sample-0"]').click();await page.locator('[data-qty="sample-0"][data-delta="1"]').click();
+ await page.locator('#discount').fill('5');await page.locator('#discount').dispatchEvent('change');assert.equal(await page.locator('#due').textContent(),'¥25.00');
+ await page.locator('#checkout').click();
+ await page.getByRole('button',{name:'已到账，完成收款'}).click();assert.equal(await page.evaluate(()=>state.products[0].stock),34);
+ let order=await page.evaluate(()=>state.orders[0]);assert.equal(order.total,2500);assert.equal(order.cost,1800);assert.equal(order.change,0);assert.equal(order.payment,'已收款');
+ assert.equal(await page.locator('#dialog').isVisible(),false);await page.reload();assert.equal(await page.evaluate(()=>state.orders.length),1);assert.equal(await page.evaluate(()=>state.products[0].stock),34);
+ await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="products"]').click();await page.locator('[data-stock="sample-0"]').click();await page.locator('#stockQty').fill('2');await page.locator('#stockCost').fill('12');await page.locator('#stockNote').fill('测试采购');await page.getByRole('button',{name:'确认并记录'}).click();
+ assert.equal(await page.evaluate(()=>state.products[0].stock),36);assert.equal(await page.evaluate(()=>state.products[0].cost),917);assert.equal(await page.evaluate(()=>state.orders[0].cost),1800);
+ await page.locator('[data-stock="sample-0"]').click();await page.locator('#stockType').selectOption('手动出库');await page.locator('#stockQty').fill('999');await page.locator('#stockNote').fill('测试超卖');await page.getByRole('button',{name:'确认并记录'}).click();assert.equal(await page.evaluate(()=>state.products[0].stock),36);assert((await page.locator('#toast').textContent()).includes('库存不足'));await page.locator('#closeDialog').click();
+ await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="receipts"]').click();await page.locator('[data-receipt]').click();await page.locator('#refundOrder').click();await page.locator('#refundNote').fill('测试退款');await page.getByRole('button',{name:'已退款，确认退货'}).click();assert.equal(await page.evaluate(()=>state.products[0].stock),38);assert.equal(await page.evaluate(()=>state.orders[0].refunded),true);
+ const rt=await page.evaluate(()=>reportTotals());assert.equal(rt.net,0);assert.equal(rt.profit,0);
+ await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="reports"]').click();await page.locator('#addExpense').click();await page.locator('#expenseAmount').fill('2.50');await page.locator('#expenseNote').fill('运费');await page.getByRole('button',{name:'保存支出'}).click();assert.equal(await page.evaluate(()=>reportTotals().profit),-250);
+ const safe=await page.evaluate(()=>{const before=JSON.stringify(state);const set=Storage.prototype.setItem;Storage.prototype.setItem=()=>{throw Error('存储已满')};try{transact(s=>s.store='不应保存');return JSON.stringify(state)===before}finally{Storage.prototype.setItem=set}});assert(safe);
+ assert(await page.evaluate(()=>{try{const s=clone(state);s.products[0].stock=-1;validate(s);return false}catch{return true}}));
+ const saved=await page.evaluate(()=>JSON.stringify(state));await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="settings"]').click();
+ await page.locator('#importFile').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(saved)});
+ await page.locator('#restoreText').fill('恢复备份');await page.getByRole('button',{name:'替换并恢复'}).click();assert.equal(await page.evaluate(()=>JSON.stringify(state)),saved);
+ await page.locator('#importFile').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{"version":1}')});assert.equal(await page.evaluate(()=>JSON.stringify(state)),saved);assert((await page.locator('#toast').textContent()).includes('无法恢复'));
+ await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="products"]').click();if(!await page.locator('#newProduct').count()){await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="products"]').click();}await page.locator('#newProduct').click();await page.locator('#pName').fill('测试商品');await page.locator('#pCode').fill('TEST-123');await page.locator('#pPrice').fill('12.50');await page.locator('#pCost').fill('6');await page.locator('#pStock').fill('1');await page.getByRole('button',{name:'保存商品'}).click();
+ await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="pos"]').click();await page.locator('#search').fill('TEST-123');await page.locator('#search').press('Enter');assert.equal(await page.evaluate(()=>state.cart[0].qty),1);const id=await page.evaluate(()=>state.cart[0].productId);await page.locator(`[data-qty="${id}"][data-delta="1"]`).click();assert.equal(await page.evaluate(()=>state.cart[0].qty),1);assert((await page.locator('#toast').textContent()).includes('库存不足'));
+ await page.locator('#clearCart').click();
+ await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="pos"]').click();for(const width of [320,390,768,1100,1440]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow at '+width)}
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(__dirname,'preview-mobile.png'),fullPage:true});
+ assert.deepEqual(errors,[]);console.log('PASS: checkout, discount, no payment selector or automatic receipt, stock deduction, reload persistence, weighted cost, oversell rejection, refund, expense, failed-save rollback, backup validation, responsive layouts.');await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});

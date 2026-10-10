@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>示例经营账</title>
+  <style>
+/* Contain horizontal date transitions without affecting vertical scrolling. */
+.shell{overflow-x:clip;touch-action:pan-y pinch-zoom}
+.date-notice{position:fixed;top:14px;top:calc(env(safe-area-inset-top,0px) + 14px);left:50%;z-index:70;display:flex;align-items:center;gap:11px;width:max-content;max-width:calc(100vw - 28px);padding:11px 18px 11px 12px;border:1px solid #ffffff40;border-radius:20px;background:#344dbb;color:#fff;box-shadow:0 8px 28px #283e8033;pointer-events:none;opacity:0;transform:translate(-50%,-14px);transition:opacity .18s ease,transform .22s ease}
+.date-notice.show{opacity:1;transform:translate(-50%,0)}.date-notice-icon{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;background:#ffffff20;border-radius:11px;font-size:22px}.date-notice small{display:block;font-size:11px;color:#dce3ff;line-height:1.5}.date-notice strong{display:block;font-size:14px;line-height:1.6;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){.date-notice{transition:none;transform:translate(-50%,0)}}
+
+:root{--bg:#f4f6fb;--ink:#19243b;--muted:#7c879c;--line:#e5eaf3;--blue:#5066e9;--green:#119b72;--red:#df5965}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Microsoft YaHei",sans-serif;font-size:14px}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:11px;min-height:40px;padding:9px 14px;background:#eef1fc;color:#465ad4;white-space:nowrap;font-weight:600}button:hover{filter:brightness(.96)}button:active{transform:translateY(1px)}button:disabled{opacity:.5;cursor:wait}button:focus-visible,input:focus,select:focus{outline:2px solid #a4b3ff;outline-offset:2px}input,select{min-width:0;max-width:100%;width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;color:var(--ink)}input::placeholder{color:#9aa3b5}
+.shell{max-width:1100px;margin:auto;padding:28px 24px 50px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:30px}.brand{display:flex;align-items:center;gap:12px;min-width:0}.store-logo{width:64px;height:64px;object-fit:contain;border-radius:14px;background:white;flex-shrink:0}.brand h1{font-size:25px;margin:0;letter-spacing:-.5px}.brand p{font-size:12px;color:var(--muted);margin:5px 0 0}.top-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}.top-actions input{width:142px;min-height:36px;font-size:12px;padding:7px 8px}.top-actions button{background:white;border:1px solid var(--line);color:#526077;min-height:36px}
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-bottom:20px}.hero h2{font-size:25px;margin:0 0 6px}.hero p{font-size:13px;color:var(--muted);margin:0}.primary,.full,.save-edit,#weekInfoBtn{background:var(--blue);color:white}.full{width:100%;min-height:46px}.hero #weekInfoBtn{flex-shrink:0;min-width:78px;box-shadow:0 4px 12px #5066e922}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}.metric,.panel{background:white;border:1px solid #e9edf5;border-radius:17px;box-shadow:0 5px 20px #25375305;min-width:0}.metric{padding:18px;border-top:3px solid #7483ef}.metric:nth-child(3){border-top-color:#eab175}.metric:last-child{border-top-color:#53b89b}.label,.metric small{color:var(--muted);font-size:12px}.metric strong{display:block;font-size:25px;margin:10px 0 4px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.profit strong{color:var(--green)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}.grid>div{min-width:0}.panel{padding:22px}.panel-head,.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.panel h3,.modal h3{font-size:17px;margin:0}.subtle{font-size:12px;color:var(--muted)}.panel-head .subtle{margin-left:auto}.form-row,.expense-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{margin-bottom:15px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:7px}.calc{background:#f5f7fe;border-radius:12px;padding:14px;margin-bottom:16px}.calc-line{display:flex;justify-content:space-between;gap:10px;margin:8px 0;color:var(--muted);font-size:13px}.calc-line.total{border-top:1px solid #e1e7f5;padding-top:12px;color:var(--ink)}.calc-line.total b{font-size:20px;color:var(--green)}.expense{margin-top:20px}.expense-form button{background:#fdf0f2;color:var(--red)}
+.records{max-height:640px;overflow:auto}.record{padding:16px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.record:last-child{border:0}.record-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.record-top strong{font-size:16px;min-width:0}.record-top>span{font-weight:650;color:var(--green);flex-shrink:0}.tag{display:inline-block;background:#eef1fc;color:#5665c8;border-radius:6px;font-size:11px;padding:4px 6px;margin:4px 0;font-weight:500}.record-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:8px;color:var(--muted);font-size:12px;line-height:1.7}.record-bottom>span:first-child{min-width:0;overflow-wrap:anywhere}.record-actions{display:flex;gap:6px;flex-shrink:0}.record-actions button{font-size:12px;min-height:36px;padding:6px 9px}.danger{color:var(--red);background:#fff0f2}#dayHistory{font-size:12px;min-height:36px;padding:6px 10px}.empty{text-align:center;color:var(--muted);padding:40px 8px}
+.modal-backdrop{display:none;position:fixed;inset:0;background:#17203366;z-index:30;padding:18px;align-items:center;justify-content:center}.modal-backdrop.show{display:flex}.modal{width:100%;max-width:540px;max-height:calc(100dvh - 36px);overflow:auto;background:white;border-radius:19px;padding:22px;box-shadow:0 20px 70px #15223d30}.close{width:40px;height:40px;min-height:40px;padding:0;flex-shrink:0;background:#f1f3f8;color:#6a768a;font-size:23px}.modal-actions{display:flex;gap:12px;margin-top:16px}.modal-actions button{flex:1}.sync-panel{display:flex;flex-direction:column;gap:12px;margin:0}.sync-status{display:block;background:#f4f6fc;padding:12px;border-radius:10px;color:var(--muted)}.sync-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sync-actions button:first-child{grid-column:1/-1}.sync-hint{color:var(--muted);line-height:1.7;font-size:12px;margin:0}.week-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.week-card{background:#f4f6fe;padding:14px;border-radius:12px;min-width:0}.week-card span{font-size:12px;color:var(--muted)}.week-card strong{display:block;font-size:21px;margin-top:6px;overflow-wrap:anywhere}.week-nav{display:flex;gap:8px;margin-bottom:14px}.week-nav button{flex:1;font-size:12px}.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#1b2943;color:#fff;padding:12px 18px;border-radius:12px;z-index:60;opacity:0;pointer-events:none;max-width:90vw}.toast.show{opacity:1}
+@media(max-width:760px){.shell{padding:18px 14px 36px}.top{gap:10px;margin-bottom:24px}.store-logo{width:52px;height:52px}.brand{gap:8px}.brand h1{font-size:21px}.brand p{font-size:10px;max-width:145px;line-height:1.5}.top-actions input{width:130px}.hero h2{font-size:23px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.metric{padding:14px 12px}.metric strong{font-size:21px}.grid{grid-template-columns:minmax(0,1fr);gap:16px}.panel{padding:18px}.expense{margin-top:16px}.modal{padding:18px}.record-top strong{font-size:15px}.record-bottom{flex-wrap:wrap}.record-actions{margin-left:auto}.records{max-height:none}}
+@media(max-width:370px){.shell{padding:14px 10px}.store-logo{width:44px;height:44px}.brand h1{font-size:18px}.brand p{max-width:120px}.top-actions input{width:122px}.hero h2{font-size:21px}.panel{padding:14px}}
+
+.auto-sync-options{display:grid;gap:12px}.auto-sync-options label{display:flex;align-items:center;gap:10px;line-height:1.6}.auto-sync-options input[type=checkbox]{width:20px;height:20px;min-height:20px;flex-shrink:0;accent-color:var(--blue)}#autoSyncStatus{overflow-wrap:anywhere;margin:0 0 14px}
+.weekly-sales{margin-bottom:12px;background:linear-gradient(120deg,#edf2ff,#fff);border-top-color:var(--blue)!important}.weekly-sales strong{color:var(--blue);font-size:28px}.weekly-sales small{display:block;line-height:1.6}
+.hero-actions{display:flex;gap:8px;flex-shrink:0}.hero-actions button{font-size:13px}.owner-total{background:#f4f6fe;border-radius:12px;padding:15px;margin-bottom:12px}.owner-total strong{display:block;font-size:24px;margin-top:6px;color:var(--blue)}
+@media(max-width:760px){.hero{flex-wrap:wrap}.hero-actions{margin-left:auto}.hero-actions button{min-height:40px;padding:9px 12px}}
+.hero-actions #colorToggleBtn{width:32px;height:32px;min-height:32px;flex:0 0 32px;align-self:center;padding:0;border:1px solid #aeb6c3;border-radius:8px;background:#bcc3ce;box-shadow:none}
+.hero-actions #colorToggleBtn[aria-pressed="true"]{background:#22b573;border-color:#18975d}
+.hero-actions #redToggleBtn{width:32px;height:32px;min-height:32px;flex:0 0 32px;align-self:center;padding:0;border:1px solid #aeb6c3;border-radius:8px;background:#bcc3ce;box-shadow:none}
+.hero-actions #redToggleBtn[aria-pressed="true"]{background:#e65a67;border-color:#cf4250}
+#recordNoteInput{display:block;width:100%;min-height:110px;resize:vertical;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;line-height:1.6;color:var(--ink)}
+#dateContent{transform:translateZ(0);backface-visibility:hidden}
+</style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top"><div class="brand"><img class="store-logo" src="store-logo.svg" alt="店铺Logo" onerror="this.style.display='none';this.nextElementSibling.classList.add('logo-fallback')" /><div><h1>示例经营账</h1><p>轻量、快速的销售利润记录</p></div></div><input class="date" id="selectedDate" type="date" min="0001-01-01" max="9999-12-31" aria-label="选择记账日期" onchange="changeSelectedDate(this.value)" /></header>
+    <section class="hero"><div><h2>今日经营概览</h2><p>记录金额，利润自动算好。</p></div><button class="primary" onclick="document.getElementById('amount').focus()">＋ 新增销售</button></section>
+    <section class="metric weekly-sales" aria-label="本周销售额"><div class="label" id="weeklySalesLabel">本周销售额</div><strong id="weeklySalesTotal">¥0.00</strong><small id="weeklySalesRange"></small></section>
+    <section class="sync-panel"><span class="sync-status" id="syncStatus">NAS同步</span><input id="serverUrl" value="http://192.0.2.10:5688" /><button onclick="testSync()">测试连接</button><button onclick="uploadSync()">上传数据</button><button onclick="downloadSync()">下载数据</button></section><section class="metrics"><div class="metric"><div class="label">今日销售额</div><strong id="salesTotal">¥0.00</strong><small id="salesCount">0 笔销售</small></div><div class="metric"><div class="label">今日成本</div><strong id="costTotal">¥0.00</strong><small>按成本倍率计算</small></div><div class="metric"><div class="label">今日支出</div><strong id="expenseTotal">¥0.00</strong><small>日常及固定支出</small></div><div class="metric profit"><div class="label">今日净利润</div><strong id="profitTotal">¥0.00</strong><small>销售利润 − 支出</small></div></section>
+    <section class="grid"><div><div class="panel"><div class="panel-head"><h3>新增销售</h3><span class="subtle">金额优先，几秒完成</span></div><div class="field"><label>销售金额</label><input id="amount" type="number" min="0" step="0.01" placeholder="例如 100" oninput="calculate()" /></div><div class="form-row"><div class="field"><label>所属人</label><select id="owner"><option>共有</option><option>赤眸</option><option>冰玫瑰</option><option>不解语</option><option>老张</option></select></div><div class="field"><label>成本倍率</label><select id="rate" onchange="calculate()"><option value="0.75">75% · 默认</option><option value="0.7">70%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option></select></div></div><div class="form-row"><div class="field"><label>收款手续费</label><select id="feeRate" onchange="calculate()"><option value="0.0038">千分之3.8 · 默认</option><option value="0.006">千分之6</option></select></div><div class="field"><label>备注（可选）</label><input id="note" type="text" placeholder="例如：晚场" /></div></div><div class="calc"><div class="calc-line"><span>预计成本</span><b id="previewCost">¥0.00</b></div><div class="calc-line"><span>预计手续费</span><b id="previewFee">¥0.00</b></div><div class="calc-line total"><span>预计利润</span><b id="previewProfit">¥0.00</b></div><div class="calc-line"><span>利润率</span><b id="previewMargin">0%</b></div></div><button class="full" onclick="addSale()">保存这笔销售</button></div><div class="panel expense"><div class="panel-head"><h3>快速记支出</h3><span class="subtle">奖品单独记录</span></div><div class="expense-form"><input id="expenseAmount" type="number" min="0" step="0.01" placeholder="支出金额" /><select id="expenseType"><option>日常支出</option><option>月度固定支出</option><option>奖品支出</option></select><button onclick="addExpense()">记录</button></div></div></div><div class="panel"><div class="panel-head"><h3>今日记录</h3><span class="subtle" id="recordCount">0 条</span></div><div class="records" id="records"><div class="empty">还没有记录<br>从左侧添加第一笔销售吧</div></div></div></section>
+  </main><div class="modal-backdrop" id="editModal"><div class="modal"><div class="modal-head"><h3>修改销售记录</h3><button class="close" onclick="closeEdit()">×</button></div><div class="field"><label>销售金额</label><input id="editAmount" type="number" min="0" step="0.01" /></div><div class="form-row"><div class="field"><label>所属人</label><select id="editOwner"><option>共有</option><option>赤眸</option><option>冰玫瑰</option><option>不解语</option><option>老张</option></select></div><div class="field"><label>成本倍率</label><select id="editRate"><option value="0.75">75%</option><option value="0.7">70%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option></select></div></div><div class="form-row"><div class="field"><label>收款手续费</label><select id="editFeeRate"><option value="0.0038">千分之3.8</option><option value="0.006">千分之6</option></select></div><div class="field"><label>备注</label><input id="editNote" type="text" /></div></div><div class="modal-actions"><button class="cancel" onclick="closeEdit()">取消</button><button class="save-edit" onclick="saveEdit()">保存修改</button></div></div></div><div class="toast" id="toast"></div>
+  <div class="date-notice" id="dateNotice"><span class="date-notice-icon" id="dateNoticeIcon" aria-hidden="true">←</span><div role="status" aria-live="polite" aria-atomic="true" id="dateNoticeMessage"></div></div>
+  <script src="sync.js"></script>
+  <script>
+
+const $=id=>document.getElementById(id), key='generic-preview-data';
+const dateKey=d=>[String(d.getFullYear()).padStart(4,'0'),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+const today=dateKey(new Date()), round=n=>Math.round((n+Number.EPSILON)*100)/100, money=n=>'¥'+Number(n||0).toFixed(2);
+const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2);
+const escapeText=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let data={sales:[],expenses:[],history:[],dateMarks:{},redDateMarks:{}},editingId=null,displayedDate=today;
+function normalize(d){
+ if(!d||!Array.isArray(d.sales)||!Array.isArray(d.expenses))throw Error('账本格式不正确');
+ for(const [kind,rows] of [['sales',d.sales],['expenses',d.expenses]])for(const v of rows){
+  if(!Number.isFinite(v.a)||v.a<=0)throw Error('账本包含无效金额');
+  if(kind==='sales'&&(!Number.isFinite(v.r)||v.r<0||v.r>1||!Number.isFinite(v.f)||v.f<0))throw Error('账本包含无效成本或手续费');
+  v.id=v.id||uid();v.date=v.date||today;v.history=Array.isArray(v.history)?v.history:[];
+ }
+ d.history=Array.isArray(d.history)?d.history:[];for(const field of ['dateMarks','redDateMarks'])d[field]=d[field]&&typeof d[field]==='object'&&!Array.isArray(d[field])?d[field]:{};return d;
+}
+try{data=normalize(JSON.parse(localStorage.getItem(key)||'{"sales":[],"expenses":[]}'));}catch(e){setTimeout(()=>toast('本地数据读取失败，原数据未覆盖，请先备份。'),200);}
+$('selectedDate').value=today;
+function persist(next,changed=true){try{localStorage.setItem(key,JSON.stringify(next));data=next;render();if(changed)queueAutoSync();return true;}catch(e){toast('保存失败，请检查设备存储空间');return false;}}
+function transact(fn){const next=JSON.parse(JSON.stringify(data));fn(next);return persist(next);}
+function amountValue(id){const n=Number($(id).value);if(!Number.isFinite(n)||n<=0||n>999999999){toast('请输入大于 0 的有效金额');return null;}if(round(n)<0.01){toast('金额至少为 0.01 元');return null;}return round(n);}
+function calculate(){const a=Number($('amount').value)||0,c=round(a*Number($('rate').value)),f=round(a*Number($('feeRate').value));$('previewCost').textContent=money(c);$('previewFee').textContent=money(f);$('previewProfit').textContent=money(a-c-f);$('previewMargin').textContent=(a>0?(a-c-f)/a*100:0).toFixed(1)+'%';}
+function stamp(){return {date:$('selectedDate').value||today,t:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),createdAt:new Date().toISOString(),id:uid(),history:[]};}
+function addSale(){const a=amountValue('amount');if(a===null)return;if(transact(d=>d.sales.unshift({...stamp(),a,r:Number($('rate').value),f:round(a*Number($('feeRate').value)),feeRate:Number($('feeRate').value),owner:$('owner').value,n:$('note').value.trim()}))){$('amount').value='';$('note').value='';calculate();toast('销售已保存');}}
+function addExpense(){const a=amountValue('expenseAmount');if(a===null)return;if(transact(d=>d.expenses.unshift({...stamp(),a,n:$('expenseType').value+($('expenseNote').value.trim()?' · '+$('expenseNote').value.trim():'')}))){$('expenseAmount').value='';$('expenseNote').value='';toast('支出已保存');}}
+// Keep cash entries in the existing synced collection, with an explicit income type.
+function addIncome(){const a=amountValue('incomeAmount');if(a===null)return;if(transact(d=>d.expenses.unshift({...stamp(),a,type:'income',n:'额外收入'+($('incomeNote').value.trim()?' · '+$('incomeNote').value.trim():'')}))){$('incomeAmount').value='';$('incomeNote').value='';toast('额外收入已保存');}}
+function totals(day){const ss=data.sales.filter(v=>v.date===day),ee=data.expenses.filter(v=>v.date===day);const sales=round(ss.reduce((s,v)=>s+v.a,0)),cost=round(ss.reduce((s,v)=>s+round(v.a*v.r),0)),income=round(ee.filter(v=>v.type==='income').reduce((s,v)=>s+v.a,0)),spend=round(ss.reduce((s,v)=>s+v.f+(v.p||0),0)+ee.filter(v=>v.type!=='income').reduce((s,v)=>s+v.a,0));return {sales,cost,income,spend,profit:round(sales-cost-spend+income),count:ss.length};}
+function render(){
+ const day=$('selectedDate').value||displayedDate,t=totals(day),current=day===dateKey(new Date());
+ $('selectedDate').value=day;displayedDate=day;
+ if($('colorToggleBtn'))$('colorToggleBtn').setAttribute('aria-pressed',String(data.dateMarks?.[day]===true));
+ if($('redToggleBtn'))$('redToggleBtn').setAttribute('aria-pressed',String(data.redDateMarks?.[day]===true));
+ const weekStart=monday(localDate(day)),weekEnd=new Date(weekStart);weekEnd.setDate(weekEnd.getDate()+6);
+ const startKey=dateKey(weekStart),endKey=dateKey(weekEnd),weekSales=data.sales.filter(v=>v.date>=startKey&&v.date<=endKey);
+ $('weeklySalesLabel').textContent=startKey===dateKey(monday(new Date()))?'本周销售额':'所选周销售额';
+ $('weeklySalesTotal').textContent=money(round(weekSales.reduce((sum,v)=>sum+v.a,0)));
+ $('weeklySalesRange').textContent=startKey+' — '+endKey+'（周一至周日） · '+weekSales.length+' 笔销售';
+ document.querySelector('.hero h2').textContent=current?'今日经营概览':day+' 概览';
+ ['salesTotal','costTotal','expenseTotal','profitTotal'].forEach((id,i)=>$(id).textContent=money([t.sales,t.cost,t.spend,t.profit][i]));
+ $('profitTotal').style.color=t.profit<0?'var(--red)':'var(--green)';
+ $('salesCount').textContent=t.count+' 笔销售';
+ $('incomeTotal').textContent=money(t.income);
+ document.querySelectorAll('.metrics .metric .label').forEach((el,i)=>el.textContent=(current?'今日':'当日')+['销售额','成本','支出','净利润'][i]);
+ $('recordsTitle').textContent=current?'今日记录':'当日记录';
+ const rows=[...data.sales.map(v=>({...v,kind:'sales'})),...data.expenses.map(v=>({...v,kind:'expenses'}))].filter(v=>v.date===day).sort((a,b)=>(b.createdAt||b.t||'').localeCompare(a.createdAt||a.t||''));
+ $('recordCount').textContent=rows.length+' 条';
+ $('records').innerHTML=rows.map(v=>'<div class="record"><div class="record-top"><strong>'+money(v.a)+'<br><span class="tag">'+escapeText(v.kind==='sales'?'销售 · '+(v.owner||'共有'):v.n)+'</span></strong><span style="color:'+(v.kind==='expenses'&&v.type!=='income'?'var(--red)':'var(--green)')+'">'+(v.kind==='sales'?money(v.a-round(v.a*v.r)-v.f-(v.p||0)):(v.type==='income'?'+':'−')+money(v.a))+'</span></div><div class="record-bottom"><span>'+escapeText(v.t||'')+(v.kind==='sales'?' · 成本 '+money(round(v.a*v.r))+'（'+Math.round(v.r*100)+'%） · 手续费 '+money(v.f)+(v.n?' · '+escapeText(v.n):''):(v.type==='income'?' · 全额计入利润':''))+(v.history.length?' · 已修改':'')+'</span><span class="record-actions">'+(v.kind==='sales'?'<button data-edit="'+escapeText(v.id)+'">修改</button>':'')+'<button class="danger" data-delete="'+escapeText(v.id)+'" data-kind="'+v.kind+'">删除</button></span></div></div>').join('')||'<div class="empty">当天还没有记录<br>添加一笔销售、支出或额外收入开始记账</div>';
+ $('records').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editSale(b.dataset.edit));
+ $('records').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteRecord(b.dataset.kind,b.dataset.delete));
+ $('records').querySelectorAll('.record-actions').forEach((actions,i)=>{const row=rows[i],button=document.createElement('button');button.type='button';button.textContent='备注';button.dataset.recordNote=row.id;button.onclick=()=>editRecordNote(row.kind,row.id);actions.prepend(button);});
+}
+function editRecordNote(kind,id){
+ const record=data[kind]?.find(v=>v.id===id);if(!record){toast('记录已不存在');return;}
+ const original=record.n||'',separator=original.indexOf(' · ');
+ const category=kind==='sales'?'':separator<0?original:original.slice(0,separator);
+ const note=kind==='sales'?original:separator<0?'':original.slice(separator+3);
+ modal('编辑备注','<p class="subtle">'+escapeText(record.date)+' · '+money(record.a)+'</p><div class="field"><label for="recordNoteInput">备注（留空可清除）</label><textarea id="recordNoteInput" placeholder="填写这笔记录的备注"></textarea></div><div class="modal-actions"><button id="cancelRecordNote">取消</button><button class="primary" id="saveRecordNote">保存备注</button></div>');
+ $('recordNoteInput').value=note;
+ $('cancelRecordNote').onclick=()=>closeLayer($('dialog'));
+ $('saveRecordNote').onclick=()=>{
+  const current=data[kind].find(v=>v.id===id);if(!current){toast('记录已删除，无法保存备注');return;}
+  if((current.n||'')!==original){toast('这笔备注已更新，请关闭后重新编辑');return;}
+  const value=$('recordNoteInput').value.trim(),next=kind==='sales'?value:category+(value?' · '+value:'');
+  if(next===original){closeLayer($('dialog'));return;}
+  if(transact(d=>{const row=d[kind].find(v=>v.id===id);row.history.push({action:'note',time:new Date().toLocaleString('zh-CN'),before:{n:note},after:{n:value}});row.n=next;})){closeLayer($('dialog'));toast('备注已保存');}
+ };
+}
+function openLayer(layer){layer.classList.add('show');document.body.style.overflow='hidden';layer.querySelector('button')?.focus();}
+function closeLayer(layer){layer.classList.remove('show');if(!document.querySelector('.modal-backdrop.show'))document.body.style.overflow='';}
+function modal(title,html){$('dialogTitle').textContent=title;$('dialogBody').innerHTML=html;openLayer($('dialog'));return $('dialogBody');}
+function editSale(id){const v=data.sales.find(x=>x.id===id);if(!v)return;editingId=id;$('editAmount').value=v.a;$('editOwner').value=v.owner||'共有';for(const [id,value] of [['editRate',v.r],['editFeeRate',v.feeRate??v.f/v.a]]){const el=$(id);Array.from(el.options).filter(o=>o.dataset.legacy).forEach(o=>o.remove());let option=Array.from(el.options).find(o=>Math.abs(Number(o.value)-value)<0.0000001);if(!option){option=new Option(id==='editRate'?(value*100).toFixed(2)+'%（原记录）':(value*1000).toFixed(3)+'‰（原记录）',value);option.dataset.legacy='1';el.add(option);}el.value=option.value;}$('editNote').value=v.n||'';openLayer($('editModal'));}
+function closeEdit(){editingId=null;closeLayer($('editModal'));}
+function saveEdit(){const a=amountValue('editAmount');if(a===null)return;const v=data.sales.find(x=>x.id===editingId);if(!v)return;const after={a,owner:$('editOwner').value,r:Number($('editRate').value),f:round(a*Number($('editFeeRate').value)),feeRate:Number($('editFeeRate').value),n:$('editNote').value.trim()};const before=Object.fromEntries(Object.keys(after).map(k=>[k,v[k]]));if(['a','owner','r','f','n'].every(k=>before[k]===after[k])){closeEdit();return;}if(transact(d=>{const x=d.sales.find(x=>x.id===editingId);x.history.push({time:new Date().toLocaleString('zh-CN'),before,after});Object.assign(x,after);})){closeEdit();toast('修改已保存并留存历史');}}
+function deleteRecord(kind,id){const v=data[kind].find(x=>x.id===id);if(!v||!confirm('删除这笔 '+money(v.a)+' 的记录？删除和原修改历史会保留。'))return;if(transact(d=>{d.history.push({action:'delete',date:v.date,amount:v.a,label:kind==='sales'?'销售 · '+(v.owner||'共有'):v.n,time:new Date().toLocaleString('zh-CN'),record:v,kind});d[kind]=d[kind].filter(x=>x.id!==id);}))toast('已删除，操作已记入历史');}
+function describe(v){return '金额 '+money(v.a)+' · 所属人 '+(v.owner||'共有')+' · 成本 '+((v.r||0)*100).toFixed(2)+'% · 手续费 '+money(v.f)+' · 备注 '+(v.n||'无');}
+function showDayHistory(){const day=$('selectedDate').value||today,entries=[];const edits=v=>(v.history||[]).forEach(h=>entries.push('<div class="record"><b>'+(h.action==='note'?'备注修改':'修改')+'</b> <span class="subtle">'+escapeText(h.time)+'</span><p>修改前：'+escapeText(h.action==='note'?(h.before.n||'无'):describe(h.before))+'</p><p>修改后：'+escapeText(h.action==='note'?(h.after.n||'无'):describe(h.after))+'</p></div>'));[...data.sales,...data.expenses].filter(v=>v.date===day).forEach(edits);data.history.filter(h=>h.date===day).forEach(h=>{if(h.record)edits(h.record);entries.push('<div class="record"><b class="danger">删除</b> '+escapeText(h.time)+'<p>'+escapeText(h.label)+' · '+money(h.amount)+'</p></div>');});modal(day+' 修改历史',entries.join('')||'<div class="empty">当天暂无修改或删除操作</div>');}
+const localDate=s=>{const [y,m,d]=s.split('-').map(Number),date=new Date(0);date.setHours(12,0,0,0);date.setFullYear(y,m-1,d);return date;};
+const monday=d=>{const x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-(x.getDay()+6)%7);return x;};
+function showWeekly(start=monday(new Date())){start=monday(start);const days=Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(d.getDate()+i);return {date:dateKey(d),...totals(dateKey(d))};}),sum=k=>round(days.reduce((s,v)=>s+v[k],0));const root=modal('周信息','<div class="week-nav"><button id="prevWeek">上一周</button><button id="thisWeek">本周</button><button id="nextWeek">下一周</button></div><div class="field"><label for="weekStart">选择任意日期，查看所在周</label><input id="weekStart" type="date" value="'+dateKey(start)+'"></div><p class="subtle">'+days[0].date+' — '+days[6].date+'（周一至周日）</p><div class="week-grid">'+[['销售额','sales'],['净利润','profit'],['成本','cost'],['支出（含手续费）','spend']].map(([label,k])=>'<div class="week-card"><span>本周'+label+'</span><strong>'+money(sum(k))+'</strong></div>').join('')+'</div>'+days.map((v,i)=>'<div class="record"><div class="record-top"><strong>'+['周一','周二','周三','周四','周五','周六','周日'][i]+' · '+v.date+'</strong><span>'+money(v.profit)+'</span></div><div class="record-bottom"><span>销售 '+money(v.sales)+' · 支出 '+money(v.spend)+'</span><span>净利润</span></div></div>').join(''));
+ $('weekStart').onchange=e=>{if(e.target.value)showWeekly(localDate(e.target.value));};$('thisWeek').onclick=()=>showWeekly();for(const [id,n] of [['prevWeek',-7],['nextWeek',7]])$(id).onclick=()=>{const d=new Date(start);d.setDate(d.getDate()+n);showWeekly(d);};}
+const originalShowWeekly=showWeekly;
+showWeekly=function(start=monday(new Date())){originalShowWeekly(start);const begin=monday(start),end=new Date(begin);end.setDate(end.getDate()+6);const income=round(data.expenses.filter(v=>v.type==='income'&&v.date>=dateKey(begin)&&v.date<=dateKey(end)).reduce((sum,v)=>sum+v.a,0));const card=document.createElement('div');card.className='week-card';card.innerHTML='<span>本周额外收入</span><strong>'+money(income)+'</strong>';$('dialogBody').querySelector('.week-grid').appendChild(card);$('dialogBody').querySelectorAll('.record-bottom>span:first-child').forEach((el,i)=>{const day=new Date(begin);day.setDate(day.getDate()+i);el.textContent+=' · 额外收入 '+money(totals(dateKey(day)).income);});};
+function openSettings(){openLayer($('settingsLayer'));}
+let toastTimer;function toast(t){$('toast').textContent=t;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3000);}
+document.querySelector('.hero .primary').remove();
+const actions=document.createElement('div');actions.className='top-actions';actions.innerHTML='<button id="settingsBtn">设置</button>';actions.appendChild($('selectedDate'));document.querySelector('.top').appendChild(actions);$('settingsBtn').onclick=openSettings;
+const heroActions=document.createElement('div');heroActions.className='hero-actions';document.querySelector('.hero').appendChild(heroActions);
+const colorToggle=document.createElement('button');colorToggle.id='colorToggleBtn';colorToggle.type='button';colorToggle.setAttribute('aria-label','切换当前日期标记');colorToggle.setAttribute('aria-pressed','false');colorToggle.onclick=()=>{const day=$('selectedDate').value||displayedDate;const next=JSON.parse(JSON.stringify(data));if(next.dateMarks[day])delete next.dateMarks[day];else next.dateMarks[day]=true;if(persist(next))toast(next.dateMarks[day]?'当天已标记为绿色':'当天已恢复为灰色');};heroActions.appendChild(colorToggle);
+const week=document.createElement('button');week.id='weekInfoBtn';week.textContent='周信息';week.onclick=()=>showWeekly();heroActions.appendChild(week);
+const redToggle=document.createElement('button');redToggle.id='redToggleBtn';redToggle.type='button';redToggle.setAttribute('aria-label','切换当前日期红色标记');redToggle.setAttribute('aria-pressed','false');redToggle.onclick=()=>{const day=$('selectedDate').value||displayedDate;transact(d=>{d.redDateMarks=d.redDateMarks||{};d.redDateMarks[day]=d.redDateMarks[day]!==true;});};colorToggle.after(redToggle);
+const ownerCosts=document.createElement('button');ownerCosts.id='ownerCostsBtn';ownerCosts.textContent='每周成本';ownerCosts.onclick=()=>showOwnerCosts();heroActions.appendChild(ownerCosts);
+function showOwnerCosts(day=dateKey(new Date())){
+ const start=monday(localDate(day)),days=Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(d.getDate()+i);return dateKey(d);});
+ const rows=data.sales.filter(v=>days.includes(v.date)),names=[...new Set(['赤眸','冰玫瑰','不解语','老张','共有',...rows.map(v=>v.owner||'共有')])];
+ const summary=names.map(name=>{const records=rows.filter(v=>(v.owner||'共有')===name),daily=days.map(d=>round(records.filter(v=>v.date===d).reduce((sum,v)=>sum+round(v.a*v.r),0)));return {name,daily,total:round(daily.reduce((s,v)=>s+v,0))};});
+ const labels=['周一','周二','周三','周四','周五','周六','周日'];
+ modal('每周成本','<div class="week-nav"><button id="costPrev">上一周</button><button id="costToday">本周</button><button id="costNext">下一周</button></div><div class="field"><label for="costDate">选择任意日期，查看所在周</label><input type="date" id="costDate" value="'+days[0]+'"></div><p class="subtle">'+days[0]+' — '+days[6]+'（周一至周日）</p><div class="owner-total"><span class="subtle">全员周成本合计</span><strong>'+money(round(summary.reduce((s,v)=>s+v.total,0)))+'</strong></div><p class="sync-hint">成本 = 销售金额 × 成本倍率；不含手续费、奖品及运营支出。</p>'+summary.map(v=>'<section class="record owner-week"><div class="record-top"><strong>'+escapeText(v.name)+'</strong><span>周合计 '+money(v.total)+'</span></div>'+v.daily.map((cost,i)=>'<div class="record-bottom"><span>'+labels[i]+' · '+days[i]+'</span><b>'+money(cost)+'</b></div>').join('')+'</section>').join(''));
+ $('costDate').onchange=e=>{if(e.target.value)showOwnerCosts(e.target.value)};
+ $('costToday').onclick=()=>showOwnerCosts();
+ for(const [id,delta] of [['costPrev',-7],['costNext',7]])$(id).onclick=()=>{const d=new Date(start);d.setDate(d.getDate()+delta);showOwnerCosts(dateKey(d));};
+}
+const recordsHead=$('recordCount').parentElement;recordsHead.querySelector('h3').id='recordsTitle';const historyButton=document.createElement('button');historyButton.id='dayHistory';historyButton.textContent='修改历史';historyButton.onclick=showDayHistory;recordsHead.appendChild(historyButton);
+const noteInput=document.createElement('input');noteInput.id='expenseNote';noteInput.placeholder='备注（可选）';noteInput.setAttribute('aria-label','支出备注');document.querySelector('.expense-form').insertBefore(noteInput,document.querySelector('.expense-form button'));$('expenseType').value='奖品支出';
+const incomePanel=document.createElement('section');incomePanel.className='panel expense';incomePanel.innerHTML='<div class="panel-head"><h3>额外收入</h3><span class="subtle">全额计入利润</span></div><div class="field"><label for="incomeAmount">收入金额</label><input id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="例如 100"></div><div class="field"><label for="incomeNote">备注（可选）</label><input id="incomeNote" type="text" placeholder="例如：活动补贴"></div><button class="full" id="saveIncome">保存额外收入</button><p class="subtle">所选日期额外收入合计：<strong id="incomeTotal">¥0.00</strong></p>';document.querySelector('.expense').after(incomePanel);$('saveIncome').onclick=addIncome;
+document.querySelector('.profit small').textContent='销售利润 + 额外收入 − 支出';
+const syncPanel=document.querySelector('.sync-panel');syncPanel.remove();
+const settings=document.createElement('div');settings.id='settingsLayer';settings.className='modal-backdrop';settings.innerHTML='<section class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="modal-head"><h3 id="settingsTitle">NAS 同步设置</h3><button class="close" aria-label="关闭设置">×</button></div><div class="sync-panel"><div class="sync-status" id="syncStatus" role="status">尚未测试连接</div><label for="serverUrl">服务器地址</label><input id="serverUrl" type="url" placeholder="http://192.0.2.10:5688"><p class="sync-hint">手动备份与恢复。上传会替换 NAS 数据，下载会替换本机数据。</p><div class="sync-actions"><button data-sync="health">测试连接</button><button data-sync="upload">上传本机数据</button><button data-sync="download">下载 NAS 数据</button></div></div></section>';document.body.appendChild(settings);settings.querySelector('.close').onclick=()=>closeLayer(settings);$('serverUrl').value=localStorage.getItem('generic-server-url')||'http://192.0.2.10:5688';document.querySelectorAll('[data-sync]').forEach(b=>b.onclick=()=>sync(b.dataset.sync));
+const dialog=document.createElement('div');dialog.id='dialog';dialog.className='modal-backdrop';dialog.innerHTML='<section class="modal" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="modal-head"><h3 id="dialogTitle"></h3><button class="close" aria-label="关闭">×</button></div><div id="dialogBody"></div></section>';document.body.appendChild(dialog);dialog.querySelector('.close').onclick=()=>closeLayer(dialog);
+document.querySelectorAll('.modal-backdrop').forEach(layer=>layer.addEventListener('click',e=>{if(e.target===layer)closeLayer(layer);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-backdrop.show').forEach(closeLayer);});
+document.querySelectorAll('option').forEach(o=>o.textContent=o.textContent.replace('千分之3.8','3.8‰').replace('千分之6','6‰'));
+document.querySelectorAll('input[type=number]').forEach(el=>el.setAttribute('inputmode','decimal'));
+document.querySelectorAll('.metrics .metric small')[2].textContent='含手续费、奖品及运营支出';
+let dateTransitionAnimations=[],dateNoticeTimer;
+function showDateNotice(day,direction){
+ const date=localDate(day),weekday=['周日','周一','周二','周三','周四','周五','周六'][date.getDay()];
+ $('dateNoticeIcon').textContent=direction>0?'←':'→';
+ const label=document.createElement('small'),value=document.createElement('strong');
+ label.textContent='已切换日期';value.textContent=date.getFullYear()+'年'+(date.getMonth()+1)+'月'+date.getDate()+'日 · '+weekday;
+ $('dateNoticeMessage').replaceChildren(label,value);
+ $('dateNotice').classList.add('show');clearTimeout(dateNoticeTimer);
+ dateNoticeTimer=setTimeout(()=>{$('dateNotice').classList.remove('show');$('dateNoticeMessage').replaceChildren();},2200);
+}
+function changeSelectedDate(value){
+ // Keep picker, swipe, totals and the notice on the same date, even after rapid changes.
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||value<'0001-01-01'||value>'9999-12-31'||dateKey(localDate(value))!==value){
+  $('selectedDate').value=displayedDate;toast('请选择有效日期');return false;
+ }
+ $('selectedDate').value=value;
+ if(value===displayedDate)return false;
+ const direction=value>displayedDate?1:-1;
+ render();animateDateChange(direction);showDateNotice(value,direction);return true;
+}
+function animateDateChange(direction){
+ dateTransitionAnimations.forEach(animation=>animation.cancel());dateTransitionAnimations=[];
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const distance=Math.min(72,Math.round(window.innerWidth*0.18));
+ // Animate one composited layer; this avoids four independent layouts on mobile WebView.
+ const element=$('dateContent');
+ if(typeof element.animate!=='function')return;
+ const animation=element.animate([
+   {opacity:0.25,transform:'translateX('+(direction*distance)+'px)'},
+   {opacity:1,transform:'translateX(0)'}
+ ],{duration:420,easing:'cubic-bezier(0.22, 0.68, 0.24, 1)',fill:'both'});
+ dateTransitionAnimations.push(animation);
+ animation.onfinish=()=>{dateTransitionAnimations=dateTransitionAnimations.filter(item=>item!==animation);};
+}
+function initDateSwipe(){
+ const surface=document.querySelector('.shell');
+ const interactive='input,textarea,select,button,a,[contenteditable],.modal-backdrop';
+ let gesture=null;
+ const blocked=()=>document.querySelector('.modal-backdrop.show')||document.activeElement?.matches('input:not([type=date]),textarea,select,[contenteditable]');
+ surface.addEventListener('touchstart',event=>{
+  gesture=null;
+  if(event.touches.length!==1||blocked()||event.target.closest(interactive))return;
+  const touch=event.touches[0];
+  // Leave screen-edge gestures to Android navigation.
+  if(touch.clientX<24||touch.clientX>window.innerWidth-24)return;
+  gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,time:Date.now(),date:$('selectedDate').value};
+ },{passive:true});
+ surface.addEventListener('touchmove',event=>{
+  if(!gesture)return;
+  const touch=Array.from(event.touches).find(t=>t.identifier===gesture.id);
+  if(event.touches.length!==1||!touch||Math.abs(touch.clientY-gesture.y)>30)gesture=null;
+ },{passive:true});
+ surface.addEventListener('touchcancel',()=>{gesture=null},{passive:true});
+ surface.addEventListener('touchend',event=>{
+  const start=gesture;gesture=null;
+  if(!start||event.touches.length||blocked()||$('selectedDate').value!==start.date)return;
+  const touch=Array.from(event.changedTouches).find(t=>t.identifier===start.id);if(!touch)return;
+  const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
+  if(Math.abs(dx)<80||Math.abs(dy)>30||Math.abs(dx)<Math.abs(dy)*2||Date.now()-start.time>1200)return;
+  const day=localDate(start.date||dateKey(new Date()));day.setDate(day.getDate()+(dx<0?1:-1));
+  if(day.getFullYear()<1||day.getFullYear()>9999)return;
+  changeSelectedDate(dateKey(day));
+ },{passive:true});
+ const hint=document.createElement('p');hint.className='subtle';hint.textContent='左滑下一天 · 右滑上一天';hint.style.margin='0 0 12px';document.querySelector('.metrics').before(hint);
+}
+ const dateContent=document.createElement('div');dateContent.id='dateContent';const main=document.querySelector('main'),header=document.querySelector('.top');while(header.nextSibling)dateContent.appendChild(header.nextSibling);main.appendChild(dateContent);
+ calculate();render();initAutoSync();initDateSwipe();
+
+</script>
+</body></html>
