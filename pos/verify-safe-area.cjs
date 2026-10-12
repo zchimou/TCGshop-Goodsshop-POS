@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 const assert=require('assert'),fs=require('fs'),path=require('path');
 (async()=>{
- const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const p=await b.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ const b=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});const p=await b.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  await require('./test-auth.cjs').prepare(p,{frame:true});
  await p.addInitScript(()=>{window.NativePOS={saveBackup(){}}});
  await p.route('https://safe-area.test/**',async route=>{

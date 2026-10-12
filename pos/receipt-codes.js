@@ -1,3 +1,3 @@
-/* No bundled store branding. Upload a logo in receipt settings if needed. */
-window.POSReceiptLogo="";
+/* Public source has no bundled shop logo or social codes. Configure a logo in receipt settings. */
+window.POSReceiptLogo='';
 window.POSReceiptCodes=[];

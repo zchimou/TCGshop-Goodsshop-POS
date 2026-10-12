@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 const {pathToFileURL}=require('url');const path=require('path');const assert=require('assert');
 (async()=>{
- const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});
  const page=await browser.newPage({viewport:{width:1440,height:1000},timezoneId:'Asia/Shanghai'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await require('./test-auth.cjs').prepare(page);
  await page.goto(pathToFileURL(path.join(__dirname,'index.html')).href);

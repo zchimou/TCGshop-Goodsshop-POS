@@ -1,9 +1,9 @@
 const {chromium}=require('playwright');
 const fs=require('fs'),path=require('path'),assert=require('assert');
 (async()=>{
- const root=path.resolve(__dirname,'../tcgshop-android/out/v2.0.3/assets');
- assert(fs.existsSync(path.join(root,'index.html')),'Build the 2.0.3 package first');
- const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const root=path.resolve(__dirname,'../tcgshop-android/out/v1.1.0/assets');
+ assert(fs.existsSync(path.join(root,'index.html')),'Build the 1.1.0 package first');
+ const b=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});
  try{
   const p=await b.newPage({viewport:{width:390,height:780}}),errors=[];
   p.on('pageerror',e=>errors.push(e.message));
@@ -31,7 +31,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
   await p.reload();
   await p.locator('#scanSearch').waitFor();
   await p.evaluate(()=>{page='settings';render();document.querySelectorAll('.settings-fold').forEach(d=>d.open=true)});
-  assert((await p.locator('#main').textContent()).includes('v2.0.3 正式版'));
+  assert((await p.locator('#main').textContent()).includes('v1.1.0 正式版'));
   await p.locator('#exportBackup').click();
   const backup=await p.evaluate(()=>window.backup);
   assert(backup.name.endsWith('.json'));
@@ -42,6 +42,6 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
   assert(await p.locator('#authForm').isVisible());
   assert.equal(await p.locator('#authConfirm').count(),0);
   assert.deepEqual(errors,[]);
-  console.log('PASS: 2.0.3 packaged HTTPS assets, secure WebCrypto, native page mode, self-chosen admin, attributed checkout, remembered login, native backup bridge and explicit logout.');
+  console.log('PASS: 1.1.0 packaged HTTPS assets, secure WebCrypto, native page mode, self-chosen admin, attributed checkout, remembered login, native backup bridge and explicit logout.');
  }finally{await b.close();}
 })().catch(e=>{console.error(e);process.exit(1)});

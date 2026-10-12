@@ -128,6 +128,7 @@ public class MainActivity extends Activity {
     }
     private void printerResult(String id,org.json.JSONObject result){runOnUiThread(()->{if(web!=null&&web.getUrl()!=null&&web.getUrl().startsWith(ORIGIN+"/assets/"))web.evaluateJavascript("window.POSPrinter&&window.POSPrinter.receiveNative("+org.json.JSONObject.quote(id)+","+result.toString()+")",null);});}
     public final class BackupBridge {
+        @JavascriptInterface public String appVersion(){try{return getPackageManager().getPackageInfo(getPackageName(),0).versionName;}catch(Exception e){return "";}}
         @JavascriptInterface public void checkUpdates(){runOnUiThread(()->{if(updates!=null&&web!=null&&web.getUrl()!=null&&web.getUrl().startsWith(ORIGIN+"/assets/"))updates.check(true);});}
         private static final int MAX_PRINTER_PAYLOAD=4000000;
         @JavascriptInterface public void printerRequest(String id,String action,String payload){
@@ -159,6 +160,9 @@ public class MainActivity extends Activity {
             if(id==null||!id.matches("[-a-zA-Z0-9]{1,100}"))return;
             runOnUiThread(()->{if(web==null||web.getUrl()==null||!web.getUrl().startsWith(ORIGIN+"/assets/"))return;nas.request(base,path,method,token,etag,body,compress,result->runOnUiThread(()->{if(web!=null&&web.getUrl()!=null&&web.getUrl().startsWith(ORIGIN+"/assets/"))web.evaluateJavascript("window.POSSync&&window.POSSync.receiveNative("+org.json.JSONObject.quote(id)+","+result.toString()+")",null);}));});
         }
+        @JavascriptInterface public void nasRequestV4(String id,String base,String path,String method,String token,String etag,String body,boolean compress){
+            nasRequestV3(id,base,path,method,token,etag,body,compress);
+        }
         @JavascriptInterface public void saveBackup(String name,String text){
             if(text==null||text.length()>20000000)return;
             runOnUiThread(()->{
@@ -187,7 +191,20 @@ public class MainActivity extends Activity {
     private void message(String text){Toast.makeText(this,text,Toast.LENGTH_LONG).show();}
     @Override public void onBackPressed(){web.evaluateJavascript("Boolean(window.closePOSOverlay&&window.closePOSOverlay())",r->{if(!"true".equals(r))MainActivity.super.onBackPressed();});}
     @Override protected void onPause(){web.evaluateJavascript("window.POSSync&&window.POSSync.pause()",null);if(cameraRequest==null)web.evaluateJavascript("document.querySelectorAll('#coverCameraDialog[open]').forEach(d=>d.close());window.dispatchEvent(new Event('pospause'));",null);web.onPause();super.onPause();}
-    @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();if(safeFrame!=null)safeFrame.requestApplyInsets();if(updates!=null)updates.resume();}
-    @Override public void onConfigurationChanged(Configuration c){super.onConfigurationChanged(c);if(safeFrame!=null)safeFrame.requestApplyInsets();}
+    // Request a supported rate without switching the display resolution.
+    private void preferSmoothDisplay(){
+        android.view.Display display=getWindowManager().getDefaultDisplay();
+        if(display==null)return;
+        android.view.Display.Mode current=display.getMode();float rate=current.getRefreshRate();
+        for(android.view.Display.Mode mode:display.getSupportedModes()){
+            if(mode.getPhysicalWidth()==current.getPhysicalWidth()&&mode.getPhysicalHeight()==current.getPhysicalHeight())rate=Math.max(rate,mode.getRefreshRate());
+        }
+        android.os.PowerManager power=(android.os.PowerManager)getSystemService(POWER_SERVICE);
+        if(power!=null&&power.isPowerSaveMode())rate=0;
+        WindowManager.LayoutParams attrs=getWindow().getAttributes();
+        if(attrs.preferredRefreshRate!=rate){attrs.preferredRefreshRate=rate;getWindow().setAttributes(attrs);}
+    }
+    @Override protected void onResume(){super.onResume();preferSmoothDisplay();if(web!=null)web.onResume();if(safeFrame!=null)safeFrame.requestApplyInsets();if(updates!=null)updates.resume();}
+    @Override public void onConfigurationChanged(Configuration c){super.onConfigurationChanged(c);preferSmoothDisplay();if(safeFrame!=null)safeFrame.requestApplyInsets();}
     @Override protected void onDestroy(){if(updates!=null)updates.close();if(picker!=null)finishPicker(null);if(cameraRequest!=null){cameraRequest.deny();cameraRequest=null;}pendingPrinter=null;pendingPrinterId=null;printer.close();nas.close();web.removeJavascriptInterface("NativePOS");web.destroy();web=null;super.onDestroy();}
 }

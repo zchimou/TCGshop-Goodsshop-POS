@@ -23,3 +23,7 @@ const next=fixture(28);run();assert.deepEqual(JSON.parse(fs.readFileSync(path.jo
 assert.equal(fs.readFileSync(ledger,'utf8'),'{"untouched":true}');
 assert.equal(fs.existsSync(path.join(target,first.sha256+'.apk')),true);
 console.log('PASS: publish, repeat publish, upgrade, downgrade rejection, same-version replacement rejection, damaged APK leaves old version, old APK and ledger retained.');
+fixture(35);run();const renamed=fixture(36);renamed.versionName='1.1.0';fs.writeFileSync(path.join(stage,'latest.json'),JSON.stringify(renamed));run();
+assert.deepEqual(JSON.parse(fs.readFileSync(path.join(target,'latest.json'))),renamed);
+fixture(35);assert.throws(run,/downgrade/);assert.deepEqual(JSON.parse(fs.readFileSync(path.join(target,'latest.json'))),renamed);
+console.log('PASS: versionCode 36 / versionName 1.1.0 upgrades versionCode 35 despite a lower displayed version.');

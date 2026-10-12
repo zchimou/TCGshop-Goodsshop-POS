@@ -156,12 +156,14 @@
   }
   window.ProductCodeScanner = {
     openSearch(onResult){this.open(null,onResult);},
-    open(input, onResult) {
+    openInventory(onResult){this.open(null,onResult,'inventory');},
+    open(input, onResult, mode) {
       ensureDialog(); dispose();
       session = {input,onResult,task:0,stream:null,controls:null,url:null};
       get('scanTitle').textContent=input?'扫描商品条码':'扫码搜索商品';
       dialog.querySelector('.sub').textContent=input?'识别后填入商品编码':'识别已入库商品后加入当前订单';
       dialog.querySelector('.hint').textContent=input?'图像仅在本机处理。识别后填入商品编码。':'图像仅在本机处理。仅添加已入库商品，未入库的码只提醒。';
+      if(mode==='inventory'){get('scanTitle').textContent='扫描查找商品';dialog.querySelector('.sub').textContent='识别后打开商品编辑页';dialog.querySelector('.hint').textContent='图像仅在本机处理，支持商品编码与 SKU。';}
       dialog.showModal(); stopTask(session);
       startCamera();
     }

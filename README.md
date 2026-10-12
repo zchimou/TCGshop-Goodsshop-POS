@@ -1,54 +1,58 @@
 # TCGshop POS
 
-面向卡牌零售门店的收银与库存管理应用，支持 Android 客户端、蓝牙小票打印和 NAS 数据同步。
+面向零售店铺的收银与库存管理系统。当前源码版本为 **1.1.0**，Android 内部更新编号为 **36**。
 
-当前源码版本：**2.0.3**。
+## 功能
 
-## 主要功能
+- 商品管理、封面压缩、扫码查找、常用商品及收款时定价。
+- 分店库存、采购与出库、盘库数量和金额差异、负库存提示。
+- 销售及独立退款记录，按日期分组，记录列表仅显示人员名称。
+- 经营统计和扣除退货后的商品明细，适配手机、平板及折叠屏。
+- 管理员与店员权限、蓝牙 ESC/POS 配对、打印及小票样式设置。
+- NAS 静默实时通知、增量同步、图片独立存储和离线恢复。
+- 在线启动检查更新；发现更新后提示安装，离线继续使用。
 
-- **商品管理**：商品图片、CSV 导入、常用商品及未定价商品收款。
-- **收银与退款**：订单结算、销售小票、退款记录和操作账号追踪。
-- **库存管理**：出入库流水、库存调整、盘库及数量与金额差异统计。
-- **多店铺与权限**：共享商品资料、分店库存和业务记录、管理员与店员权限。
-- **经营统计**：销售汇总、商品销售明细及收款统计。
-- **小票打印**：蓝牙 ESC/POS 打印机配对、连接、订单打印及小票样式设置。
-- **数据同步**：本地离线使用、NAS 同步及多设备数据合并。
-- **版本更新**：联网后台检查更新，发现新版本后提示安装。
-
-## 目录结构
+## 目录
 
 | 目录 | 内容 |
 | --- | --- |
-| `pos/` | POS 界面、业务逻辑和回归测试 |
-| `tcgshop-android/` | Android 客户端、打印与更新模块、构建脚本 |
-| `tcgshop-server/` | NAS 同步服务、Docker 配置及发布脚本 |
-| `安装包/` | 版本说明和本地发布工具 |
-| `android-app/`、`server/` 及根目录页面 | 经营账模块及相关资源 |
+| pos/ | 界面、业务逻辑、同步客户端、浏览器回归脚本与第三方许可 |
+| tcgshop-android/ | Android 容器、蓝牙打印、更新桥接、图标及构建脚本 |
+| tcgshop-server/ | NAS 服务、Compose 配置、增量账本与图片存储、发布脚本 |
+| release-tools/ | Windows 一键上传工具与 ZIP 检查工具 |
 
-## 构建 Android 客户端
+## 本地预览与验证
 
-构建环境需要 Windows PowerShell、Android SDK 和 JDK。构建入口：
+安装 Node.js 22 或以上版本，在仓库根目录运行：
 
-```powershell
-.\tcgshop-android\build-release.ps1 -SdkRoot "<Android SDK 路径>" -JdkRoot "<JDK 路径>"
+```sh
+npm install
+npx playwright install chromium
+npm run preview
 ```
 
-构建前需配置签名密钥，并核对脚本中的 SDK 版本和文件路径。覆盖安装必须沿用相同的应用签名。版本发布脚本还会使用基准 APK 校验签名，相关路径需按部署环境配置。
+浏览器打开 http://127.0.0.1:5690。首次使用自行创建管理员；预览数据保存在当前浏览器。
 
-## 部署 NAS 服务
+```sh
+npm test
+```
 
-NAS 服务使用 Docker Compose 部署。配置同步密钥、持久化数据目录和服务地址后，客户端即可连接同步。
+可用 CHROME_PATH 指定现有 Chrome 可执行文件。独立的 verify-*.cjs 脚本覆盖账号、退款、盘库、同步、打印和布局；部分需要预览服务运行，Java 桥接检查需要 JAVA_HOME。打包资产检查需先构建 APK。
 
-- [NAS 部署说明](tcgshop-server/NAS部署说明.md)
-- [一键发布使用说明](安装包/一键发布使用说明.md)
-- [2.0.3 更新说明](安装包/2.0.3-更新说明.md)
+## Android 构建
 
-仓库中的 `pos.example.com`、`192.0.2.10` 和 `nasuser` 为示例配置，部署前需替换。Android 更新检查地址也需配置为实际版本发布入口。
+Windows PowerShell 构建入口为 tcgshop-android/build-release.ps1，需要 JDK 21、Android SDK 的 build-tools 36.0.0 及 android-37.0 平台。配置 JAVA_HOME、TCGSHOP_SIGNING_KEY、TCGSHOP_STORE_PASSWORD 和可选的 TCGSHOP_KEY_PASSWORD，使用 -KeyAlias 指定密钥别名。脚本支持 -SdkRoot、-JdkRoot 和 -SigningKey。
 
-## 小票样式
+原应用的签名密钥不包含在仓库中。覆盖安装与自动更新必须使用原签名，且内部 versionCode 高于已安装版本；显示版本 versionName 可以调整。公开源码使用独立的通用本地存储键；已有品牌版本迁移时需保留原存储键或先完成数据迁移。
 
-小票默认使用当前店铺名称，不附带品牌头图或社交二维码。可在应用设置中上传 Logo、调整底部文字，并配置打印设备和纸张宽度。
+## NAS 部署与版本发布
 
-## 数据与发布文件
+参见 [NAS 部署说明](tcgshop-server/NAS部署说明.md)。公开 Android 源码默认仅允许 HTTPS 网络连接，NAS 同步和更新服务需配置 HTTPS。Android 更新服务地址为示例 https://pos.example.com/tcgshop/api/update，部署前修改 tcgshop-android/app/src/main/java/com/tcgshop/pos/AppUpdates.java。
 
-业务数据、同步密钥、签名密钥、APK 和构建缓存不纳入版本控制。部署时需单独配置持久化存储，并管理数据备份和签名文件。
+用 tcgshop-android/publish-update.ps1 的 -Apk、-ReferenceApk 和 -Output 生成发布清单；ReferenceApk 应是已部署的同签名版本。release-tools/deploy-nas-update.ps1 使用示例 NAS 地址、账号和目录，部署前填写实际配置，并保持工具与对应 NAS 更新 ZIP 在同一目录。-CheckOnly 仅做本地完整性检查。
+
+## 数据和公开源码
+
+仓库不包含实际商品、销售账本、账号库、同步密钥、签名密钥、APK、私有头图或二维码。小票默认不显示头图，可在设置中上传。示例地址和配置不是可用服务凭证。业务备份需保存完整 NAS data 目录及原签名密钥。
+
+浏览器测试、模拟 NAS 与编译检查无法替代实际蓝牙打印、相机以及设备网络验证。离线多设备重复退款超出订单数量时会阻止合并并保留数据，需要核对真实退款。

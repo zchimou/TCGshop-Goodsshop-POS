@@ -1,6 +1,6 @@
 const assert=require('assert/strict'),path=require('path'),{pathToFileURL}=require('url');
 const {chromium}=require('playwright');
-(async()=>{const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{const p=await browser.newPage({viewport:{width:1440,height:1000}});await require('./test-auth.cjs').prepare(p);await p.goto(pathToFileURL(path.join(__dirname,'index.html')).href);
+(async()=>{const browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});try{const p=await browser.newPage({viewport:{width:1440,height:1000}});await require('./test-auth.cjs').prepare(p);await p.goto(pathToFileURL(path.join(__dirname,'index.html')).href);
  await p.locator('[data-page="products"]').click();await p.locator('[data-edit="sample-0"]').click();await p.locator('#pPrice').fill('');await p.getByRole('button',{name:'保存商品',exact:true}).click();assert.equal(await p.evaluate(()=>state.products[0].price),0);
  await p.locator('[data-page="pos"]').click();await p.locator('[data-add="sample-0"]').click();await p.locator('#checkout').click();assert.equal(await p.locator('#dialog[open]').count(),0);assert.equal(await p.evaluate(()=>state.orders.length),0);
  await p.locator('[data-cart-price="sample-0"]').click();await p.locator('#cartUnitPrice').fill('12.34');await p.getByRole('button',{name:'保存单价',exact:true}).click();assert.equal(await p.evaluate(()=>totals().total),1234);

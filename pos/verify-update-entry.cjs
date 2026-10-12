@@ -1,6 +1,6 @@
 const {chromium}=require('playwright');
 const assert=require('assert/strict'),path=require('path'),{pathToFileURL}=require('url');
-(async()=>{const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
+(async()=>{const b=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});try{
  const p=await b.newPage({viewport:{width:390,height:844}});await require('./test-auth.cjs').prepare(p);await p.goto(pathToFileURL(path.join(__dirname,'index.html')).href);
  await p.evaluate(()=>{page='settings';render()});await p.locator('summary').filter({hasText:'当前版本'}).click();await p.locator('#checkAppUpdate').click();assert((await p.locator('#toast').textContent()).includes('安卓 App'));
  await p.evaluate(()=>{window.updateCalls=0;window.NativePOS={checkUpdates:()=>window.updateCalls++};});

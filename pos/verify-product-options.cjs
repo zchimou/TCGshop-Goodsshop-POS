@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 const assert=require('assert'),path=require('path'),{pathToFileURL}=require('url');
 (async()=>{
- const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:1100,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);
+ const browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});const page=await browser.newPage({viewport:{width:1100,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);
  await require('./test-auth.cjs').prepare(page);
  await page.goto(process.env.POS_PREVIEW_URL||pathToFileURL(path.join(__dirname,'index.html')).href);assert.equal(await page.title(),'TCGshop POS');
  if(!await page.locator('#newProduct').count()){await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="products"]').click();}await page.locator('#newProduct').click();const sku=await page.locator('#pSku').inputValue();assert(/^\d{6,}$/.test(sku));assert(await page.locator('#pSku').evaluate(el=>el.readOnly));assert.equal(await page.locator('#pCode').inputValue(),'');assert.equal(await page.locator('#pCategory').count(),0);assert.equal(await page.locator('#pMin').count(),0);assert.equal(await page.locator('#pCostRate option').count(),1);assert.equal(await page.locator('#pCostRate').inputValue(),'');

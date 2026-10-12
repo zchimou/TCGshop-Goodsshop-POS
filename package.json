@@ -1,1 +1,15 @@
-{"name":"tcgshop-pos","version":"2.0.3","private":true,"devDependencies":{"playwright":"1.62.1"}}
+{
+  "name": "tcgshop-pos",
+  "version": "1.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "preview": "node pos/serve.cjs",
+    "test": "node pos/verify-report-net-items.cjs && node pos/verify-sync-merge.cjs && node tcgshop-server/verify-publisher.cjs && node pos/verify-history-layout.cjs && node pos/verify-realtime-sync.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

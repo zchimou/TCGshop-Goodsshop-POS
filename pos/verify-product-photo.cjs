@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 const assert=require('assert'),path=require('path'),{pathToFileURL}=require('url');
 (async()=>{
- const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:1100,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);await require('./test-auth.cjs').prepare(page);
+ const browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});const page=await browser.newPage({viewport:{width:1100,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);await require('./test-auth.cjs').prepare(page);
  await page.goto(process.env.POS_PREVIEW_URL||pathToFileURL(path.join(__dirname,'index.html')).href);
  const picture=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=1200;c.height=900;const ctx=c.getContext('2d');ctx.fillStyle='#607fba';ctx.fillRect(0,0,1200,900);ctx.fillStyle='#fff';ctx.font='bold 90px sans-serif';ctx.fillText('TCG CARD',280,480);return c.toDataURL('image/png').split(',')[1]});
  if(!await page.locator('#newProduct').count()){await page.evaluate(()=>setNavigation(true));await page.locator('[data-page="products"]').click();}await page.locator('#newProduct').click();assert.equal(await page.locator('#pCategory').count(),0);assert.equal(await page.locator('#pMin').count(),0);const sku=await page.locator('#pSku').inputValue();await page.locator('#pName').fill('封面测试商品');await page.locator('#pCode').fill('PHOTO-001');await page.locator('#pPrice').fill('100');await page.locator('#pCost').fill('50');await page.locator('#pStock').fill('2');

@@ -3,7 +3,7 @@ const nativeSource=require('fs').readFileSync(path.join(__dirname,'../tcgshop-an
 const payloadLimit=Number(nativeSource.match(/MAX_PRINTER_PAYLOAD=(\d+)/)[1]);
 const {chromium}=require('playwright');
 (async()=>{
- const b=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const b=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});
  try{
   const p=await b.newPage({viewport:{width:1024,height:768}}),errors=[];p.on('pageerror',e=>errors.push(e.message));
   await require('./test-auth.cjs').prepare(p);
@@ -54,6 +54,7 @@ const {chromium}=require('playwright');
   const sent=await p.evaluate(()=>printerCalls.filter(c=>c.action==='print').at(-1).payload);
   assert.equal(sent.address,'AA:BB:CC:DD:EE:FF');assert.equal(sent.width,576);assert.deepEqual(sent.socialCodes,[]);assert.equal(sent.showQr,false);assert(!('qrSeed' in sent));
   assert(sent.lines.includes('原实收：¥15.00'));assert(!sent.lines.some(s=>s.includes('99.99')));
+  assert(sent.lines.includes('收银员：测试管理员'));assert(!sent.lines.some(s=>s.includes('regression')));
   assert.equal(await p.evaluate(()=>localStorage.getItem(KEY)),ledger);
   await p.locator('[data-receipt]').click();await p.evaluate(()=>holdPrint=true);await p.locator('#receiptPrint').click();
   await p.waitForFunction(()=>!!window.heldPrinterId);assert(await p.locator('#receiptPrint').isDisabled());
@@ -77,6 +78,11 @@ const {chromium}=require('playwright');
   assert.equal(await p.evaluate(()=>printerCalls.at(-1).payload.socialCodes.length),0);
   await p.evaluate(()=>{delete NativePOS.printerRequest;render()});assert((await p.locator('#printerStatus').innerText()).includes('需更新安装包'));
   await p.locator('#printerTest').click();await p.waitForFunction(()=>document.getElementById('printerStatus').textContent.includes('当前版本不支持蓝牙打印'));
-  assert.deepEqual(errors,[]);console.log('PASS: paired-device UI, local paper/device persistence, connection/permission failures, test print, historical whole-order totals, no ledger writes, duplicate-print guard, manual retry only, shop scope and old APK compatibility.');
+  const image=await p.evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=10;return c.toDataURL('image/png').split(',')[1]});
+  await p.locator('#receiptLogo').setInputFiles({name:'invalid.png',mimeType:'image/png',buffer:Buffer.from('invalid')});await p.waitForFunction(()=>document.getElementById('receiptStyleStatus').textContent.includes('无法识别'));assert.equal(await p.locator('#receiptStyleSave').isDisabled(),false);
+  await p.locator('#receiptLogo').setInputFiles({name:'logo.png',mimeType:'image/png',buffer:Buffer.from(image,'base64')});await p.waitForFunction(()=>document.getElementById('receiptStyleStatus').textContent.includes('已读取'));await p.locator('#receiptFooter').fill('测试感谢语');await p.locator('#receiptStyleClear').click();assert.equal(await p.evaluate(()=>POSPrinter.style().footer),'测试感谢语');
+  await p.evaluate(()=>{const OriginalReader=FileReader;window.FileReader=class extends OriginalReader{readAsDataURL(file){const callback=this.onload;this.onload=e=>setTimeout(()=>callback.call(this,e),200);super.readAsDataURL(file)}}});
+  await p.locator('#receiptLogo').setInputFiles({name:'late.png',mimeType:'image/png',buffer:Buffer.from(image,'base64')});await p.evaluate(()=>{page='products';render()});await p.waitForTimeout(300);
+  assert.deepEqual(errors,[]);console.log('PASS: printer pairing/preferences/errors, immutable receipt totals, duplicate guard, invalid/late logo handling, footer preservation and old bridge compatibility.');
  }finally{await b.close();}
 })().catch(e=>{console.error(e);process.exit(1)});

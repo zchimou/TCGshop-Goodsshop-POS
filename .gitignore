@@ -28,5 +28,8 @@ tcgshop-server/release*/
 *-fixed.png
 **/preview-*.png
 
-# Generated printer test screenshot
-pos/printer-settings.png
+**/signing/
+*.apk.idsig
+**/preview-*.png
+**/release-*.png
+**/v2-inventory-*.png

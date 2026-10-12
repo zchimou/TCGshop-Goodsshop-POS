@@ -1,14 +1,16 @@
-﻿param([string]$Apk='',[string]$Notes='修复与功能更新。',[string]$Output='')
+﻿param([string]$Apk='',[string]$Notes='修复与功能更新。',[string]$Output='',[string]$ReferenceApk='',[string]$SdkRoot = "$env:USERPROFILE\AppData\Local\Android\Sdk",[string]$JdkRoot = $env:JAVA_HOME)
 $ErrorActionPreference='Stop'
 $project=Split-Path $PSScriptRoot -Parent
-if(!$Apk){$Apk=Join-Path $project '安装包/TCGshop-POS-v2.0.3.apk'}
+if(!$Apk){$Apk=Join-Path $project '安装包/TCGshop-POS-v1.1.0.apk'}
 if(!$Output){$Output=Join-Path $project 'tcgshop-server/release'}
 $Apk=(Resolve-Path -LiteralPath $Apk).Path
-$jdk=(Get-ChildItem -LiteralPath "$PSScriptRoot/tools" -Directory | Where-Object Name -Like 'jdk-21*' | Select-Object -First 1).FullName
-$bt='C:/Users/developer/AppData/Local/Android/Sdk/build-tools/36.0.0'
+$jdk=$JdkRoot
+if(!$jdk){throw 'Set JAVA_HOME or -JdkRoot.'}
+if(!$ReferenceApk){throw 'Set -ReferenceApk to an existing signed APK.'}
+$bt=Join-Path $SdkRoot 'build-tools/36.0.0'
 $cert=& "$jdk/bin/java.exe" -jar "$bt/lib/apksigner.jar" verify --print-certs $Apk
 if($LASTEXITCODE -ne 0){throw 'APK 签名校验失败'}
-$original=& "$jdk/bin/java.exe" -jar "$bt/lib/apksigner.jar" verify --print-certs (Join-Path $project '安装包/TCGshop-POS-v2.0.0.apk')
+$original=& "$jdk/bin/java.exe" -jar "$bt/lib/apksigner.jar" verify --print-certs $ReferenceApk
 if($LASTEXITCODE -ne 0){throw '原版 APK 签名校验失败'}
 $digest=$cert | Select-String 'certificate SHA-256 digest:' | ForEach-Object {$_.ToString()}
 $oldDigest=$original | Select-String 'certificate SHA-256 digest:' | ForEach-Object {$_.ToString()}

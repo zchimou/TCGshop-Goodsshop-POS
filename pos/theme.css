@@ -239,3 +239,76 @@ footer {color: var(--muted);}
  .inventory-table td:first-child,.inventory-table td:last-child{grid-column:1/-1}.inventory-table .inventory-product{min-width:0}.inventory-table .inventory-product b{max-width:none;white-space:normal}.inventory-table .inventory-product small{font-size:11px}.inventory-table td:nth-child(2)::before{content:'售价'}.inventory-table td:nth-child(3)::before{content:'本产品成本'}.inventory-table td:nth-child(4)::before{content:'现有库存'}.inventory-table td:nth-child(5)::before{content:'库存状态'}.inventory-table td:not(:first-child):not(:last-child)::before{display:block;font-size:11px;color:#67758e;margin-bottom:4px}
  .inventory-table td:last-child{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.inventory-table td button{flex:1;min-height:44px;margin:0;font-size:13px}.favorite-options label{min-height:52px}
 }
+
+/* Short compositor animations; no delay before checkout or quantity updates. */
+@keyframes pos-enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pos-fade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:no-preference){
+ dialog[open]{animation:pos-enter 160ms ease-out}
+ dialog[open]::backdrop{animation:pos-fade 120ms ease-out}
+ @media(min-width:641px) and (max-width:1366px){
+  .sidebar{opacity:0;transform:translateY(-8px);transition:transform 160ms ease-out,opacity 160ms ease-out,visibility 160ms}
+  .navigation-open .sidebar{opacity:1;transform:translateY(0)}
+ }
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* A separate compositor layer makes successful additions visible without moving the order panel. */
+.cart-flight{position:fixed;z-index:80;display:grid;place-items:center;width:48px;height:48px;border-radius:16px;color:#fff;background:#5261a6;font-size:21px;font-weight:750;pointer-events:none;box-shadow:0 5px 15px #29397535;will-change:transform,opacity;contain:layout paint}
+.inventory-controls{display:flex;flex-wrap:nowrap;gap:10px;align-items:center}.inventory-controls .search-wrap{flex:1;min-width:0}.inventory-controls #scanInventory{flex:none;white-space:nowrap;min-height:44px}
+@media(max-width:640px){.inventory-controls #scanInventory{padding:10px 12px;font-size:13px}.inventory-controls .search-wrap{flex-basis:auto}}
+
+/* Daily history groups share the same date order and heading treatment. */
+.record-day{min-width:0;margin-bottom:24px}
+.record-day-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:24px 0 12px;padding-bottom:10px;border-bottom:2px solid #dce2f2}
+.record-day-heading h3{font-size:22px;line-height:1.4;color:var(--dark)}
+.record-day-heading>span{flex:none;color:var(--muted);font-size:12px}
+.record-day .panel{margin-bottom:0}
+.records-table td[data-label="金额"]{font-weight:650;font-variant-numeric:tabular-nums}
+.report-date-range,.report-presets{display:contents}
+@media(max-width:640px){
+ .record-day-heading{margin-top:20px}.record-day-heading h3{font-size:20px}
+ .records-table table,.records-table tbody{display:block;white-space:normal}
+ .records-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .records-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px 8px;border-bottom:1px solid var(--line)}
+ .records-table tbody tr:last-child{border-bottom:0}
+ .records-table td{display:block;min-width:0;padding:0;border:0;overflow-wrap:anywhere;font-size:13px}
+ .records-table td::before{content:attr(data-label);display:block;margin-bottom:4px;color:var(--muted);font-size:11px;font-weight:400}
+ .records-table td[data-label="商品"],.records-table td[data-label="单号 / 时间"],.records-table td[data-label="时间"],.records-table td[data-label="说明"],.records-table td[data-label="操作"]{grid-column:1/-1}
+ .records-table tr[data-record-type] td:nth-child(-n+3){grid-column:1/-1}
+ .records-table td[data-label="金额"]{font-size:18px}
+ .records-table td[data-label="操作"]{display:flex;gap:8px;flex-wrap:wrap}
+ .records-table td[data-label="操作"]::before{flex-basis:100%;margin:0}
+ .records-table td button{margin:4px 0 0;white-space:nowrap}
+
+ .reports-page,.reports-page .panel,.reports-page .stat{min-width:0;max-width:100%}
+ .reports-page .report-heading{align-items:flex-start;gap:12px}
+ .reports-page .report-heading>div{flex:1 1 180px;min-width:0}
+ .reports-page #addExpense{flex:none;white-space:nowrap}
+ .reports-page .report-filters{display:block}
+ .reports-page .report-date-range{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}
+ .reports-page .report-date-range input{display:block;width:100%;min-width:0;max-width:100%;min-height:44px;padding:10px 6px;font-size:14px}
+ .reports-page .report-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+ .reports-page .report-presets button{min-width:0;padding:10px 6px;white-space:nowrap}
+ .reports-page .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
+ .reports-page .stat{padding:14px 12px}
+ .reports-page .stat strong{font-size:clamp(16px,4.4vw,23px);line-height:1.35;margin:8px 0;overflow-wrap:anywhere}
+ .reports-page .stat small{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+ .reports-page .report-items-panel .section-title{display:block}
+ .reports-page .report-items-panel .section-title small{display:block;margin-top:5px;text-align:left}
+ .reports-page .report-items-panel table,.reports-page .report-items-panel tbody{width:100%;white-space:normal}
+ .reports-page .report-items-panel tbody tr{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .reports-page .report-items-panel td{min-width:0;overflow-wrap:anywhere}
+ .reports-page .report-product-name{min-width:0;width:100%;white-space:normal;line-height:1.5}
+ .reports-page .report-product-name>span:last-child{min-width:0;overflow-wrap:anywhere}
+ .reports-page .report-product-thumb{flex-shrink:0}
+ .reports-page .report-grid{grid-template-columns:minmax(0,1fr);gap:0}
+ .reports-page .bars{display:grid;gap:14px;height:auto;padding:16px 0 0;margin-bottom:0;border:0}
+ .reports-page .bar-col{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:10px;min-width:0;height:auto}
+ .reports-page .bar-col small{position:static;grid-column:1;grid-row:1;font-size:11px;white-space:nowrap}
+ .reports-page .bar-col .bar{grid-column:2;grid-row:1;width:var(--bar-share);max-width:none;height:10px!important;min-height:0;border-radius:4px}
+ .reports-page .bar-col span{grid-column:3;grid-row:1;margin:0;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+ .reports-page .setting-row{flex-direction:row;align-items:center;gap:12px}
+ .reports-page .setting-row b{font-variant-numeric:tabular-nums;overflow-wrap:anywhere;min-width:0;text-align:right}
+ .reports-page>.hint{font-size:11px;line-height:1.7}
+}

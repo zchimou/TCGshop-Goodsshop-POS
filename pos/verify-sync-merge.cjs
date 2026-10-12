@@ -21,4 +21,27 @@ const refund=id=>({id,time,note:'退货',actor,amount:100,cost:50,lines:[{lineIn
 local.ledger.shops[0].orders=[{...order,refunds:[refund('r1')]}];remote.ledger.shops[0].orders=[{...order,refunds:[refund('r2')]}];
 result=merge(local,remote).payload;assert.equal(result.ledger.shops[0].orders[0].refunded,true);assert.equal(result.ledger.shops[0].orders[0].refundTime,time);
 remote.ledger.shops[0].deletedRecords=[{kind:'order',id:'order1'}];assert.equal(merge(local,remote).payload.ledger.shops[0].orders.length,0);
-console.log('PASS: offline product stock counted once, SKU sequence, inventory delta deduplication, deletion markers, combined full-refund time.');
+// Unrelated sales on another device must not undo local catalog or account edits.
+local=copy();remote=copy();local.ledger.products[0].price=125;
+local.accounts.users[0].name='修改后的账号';local.accounts.users[0].salt='3'.repeat(32);local.accounts.users[0].hash='4'.repeat(64);
+remote.ledger.shops[0].movements.push(movement('unrelated-sale','p1',-1,9));remote.ledger.shops[0].inventory.p1.stock=9;
+result=merge(local,remote,base).payload;assert.equal(result.ledger.products[0].price,125);
+assert.equal(result.accounts.users[0].name,'修改后的账号');assert.equal(result.accounts.users[0].salt,'3'.repeat(32));assert.equal(result.accounts.users[0].hash,'4'.repeat(64));assert.equal(result.ledger.shops[0].inventory.p1.stock,9);
+// Concurrent changes to the same field keep the NAS value; independent fields survive.
+remote.ledger.products[0].price=130;local.ledger.products[0].name='修改后的商品';
+result=merge(local,remote,base).payload;assert.equal(result.ledger.products[0].price,130);assert.equal(result.ledger.products[0].name,'修改后的商品');
+// Deleting a receipt before its first upload must retain its inventory effect.
+local=copy();remote=copy();local.ledger.shops[0].inventory.p1.stock=9;
+local.ledger.shops[0].deletedRecords=[{kind:'movement',id:'removed-offline-sale',productId:'p1',delta:-1}];
+remote.ledger.shops[0].inventory.p1.stock=8;remote.ledger.shops[0].movements=[movement('other-sale','p1',-2,8)];
+result=merge(local,remote,base).payload;assert.equal(result.ledger.shops[0].inventory.p1.stock,7);
+assert.equal(merge(local,result,base).payload.ledger.shops[0].inventory.p1.stock,7);
+// Both devices can purchase at different unit costs; replay the local receipt cost.
+local=copy();remote=copy();local.ledger.shops[0].inventory.p1={stock:12,cost:58};remote.ledger.shops[0].inventory.p1={stock:13,cost:73};
+local.ledger.shops[0].movements=[{...movement('local-purchase','p1',2,12),type:'采购入库',unitCost:100}];remote.ledger.shops[0].movements=[{...movement('remote-purchase','p1',3,13),type:'采购入库',unitCost:150}];
+result=merge(local,remote,base).payload;assert.equal(result.ledger.shops[0].inventory.p1.stock,15);assert.equal(result.ledger.shops[0].inventory.p1.cost,77);
+assert.equal(merge(local,result,base).payload.ledger.shops[0].inventory.p1.cost,77);
+local.ledger.shops[0].movements=[];local.ledger.shops[0].deletedRecords=[{kind:'movement',id:'local-purchase',productId:'p1',delta:2,unitCost:100,time}];
+result=merge(local,remote,base).payload;assert.equal(result.ledger.shops[0].inventory.p1.stock,15);assert.equal(result.ledger.shops[0].inventory.p1.cost,77);
+for(const marker of [{kind:'movement',id:'bad',productId:'p1',delta:'1'},{kind:'other',id:'bad'},{kind:'order',id:'bad',unitCost:50}]){const invalid=copy();invalid.ledger.shops[0].deletedRecords=[marker];assert.throws(()=>core.validate(invalid));}
+console.log('PASS: offline stock counted once, SKU sequence, deletion markers, refund time, catalog/account changes, atomic credentials, deleted offline stock effects and concurrent purchase costs.');
