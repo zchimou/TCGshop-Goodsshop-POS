@@ -1,5 +1,6 @@
 ﻿param([switch]$CheckOnly)
 $ErrorActionPreference='Stop'
+$UpdateUrl='https://pos.example.com/tcgshop/api/update'
 $failed=$false
 try{
  . (Join-Path $PSScriptRoot 'zip-tools.ps1')
@@ -41,7 +42,7 @@ try{
  & ssh -t -o ConnectTimeout=15 nasuser@192.0.2.10 $remote
  if($LASTEXITCODE -ne 0){throw 'NAS 更新未完成，请查看上面的错误信息'}
  Write-Host '正在核验外网更新入口…'
- $online=Invoke-RestMethod -Uri 'https://pos.example.com/tcgshop/api/update' -TimeoutSec 20 -Headers @{'Cache-Control'='no-cache'}
+ $online=Invoke-RestMethod -Uri $UpdateUrl -TimeoutSec 20 -Headers @{'Cache-Control'='no-cache'}
  if($online.versionCode -ne $manifest.versionCode -or $online.sha256 -ne $manifest.sha256){throw 'NAS 已执行更新，但外网版本或 APK 校验值不一致，请保留窗口截图检查'}
  Write-Host ('更新成功：NAS 服务和 '+$manifest.versionName+' 正式版已发布。') -ForegroundColor Green
 }catch{$failed=$true;Write-Host ('操作未完成：'+$_.Exception.Message) -ForegroundColor Red}finally{if(!$CheckOnly){Read-Host '按回车关闭窗口' | Out-Null}}

@@ -19,6 +19,7 @@
 | pos/ | 界面、业务逻辑、同步客户端、浏览器回归脚本与第三方许可 |
 | tcgshop-android/ | Android 容器、蓝牙打印、更新桥接、图标及构建脚本 |
 | tcgshop-server/ | NAS 服务、Compose 配置、增量账本与图片存储、发布脚本 |
+| tcgshop-server/external/ | 新域名 HTTPS 迁移工具及隔离测试，使用示例部署配置 |
 | release-tools/ | Windows 一键上传工具与 ZIP 检查工具 |
 
 ## 本地预览与验证
@@ -50,6 +51,8 @@ Windows PowerShell 构建入口为 tcgshop-android/build-release.ps1，需要 JD
 参见 [NAS 部署说明](tcgshop-server/NAS部署说明.md)。公开 Android 源码默认仅允许 HTTPS 网络连接，NAS 同步和更新服务需配置 HTTPS。Android 更新服务地址为示例 https://pos.example.com/tcgshop/api/update，部署前修改 tcgshop-android/app/src/main/java/com/tcgshop/pos/AppUpdates.java。
 
 用 tcgshop-android/publish-update.ps1 的 -Apk、-ReferenceApk 和 -Output 生成发布清单；ReferenceApk 应是已部署的同签名版本。release-tools/deploy-nas-update.ps1 使用示例 NAS 地址、账号和目录，部署前填写实际配置，并保持工具与对应 NAS 更新 ZIP 在同一目录。-CheckOnly 仅做本地完整性检查。
+
+域名切换参见 [域名迁移说明](tcgshop-server/external/域名迁移说明.md)。迁移工具保留旧入口，新增 HTTPS 站点并检查新旧入口是否提供同一 NAS 版本；失败时恢复运行前的站点配置。
 
 ## 数据和公开源码
 
