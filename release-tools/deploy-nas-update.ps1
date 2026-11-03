@@ -1,6 +1,6 @@
 ﻿param([switch]$CheckOnly)
 $ErrorActionPreference='Stop'
-$UpdateUrl='https://pos.example.com/tcgshop/api/update'
+$UpdateUrl='https://pos.example.com/api/update'
 $failed=$false
 try{
  . (Join-Path $PSScriptRoot 'zip-tools.ps1')

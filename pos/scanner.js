@@ -40,9 +40,29 @@
     if (!s) return;
     stopTask(s); session = null;
   }
-  function createReader(z) {
-    const reader = new z.BrowserMultiFormatReader(undefined, { delayBetweenScanAttempts: 250, delayBetweenScanSuccess: 800 });
-    reader.possibleFormats = ['EAN_13','EAN_8','UPC_A','UPC_E','CODE_128','CODE_39','CODE_93','ITF','QR_CODE','DATA_MATRIX','PDF_417'].map(format => z.BarcodeFormat[format]);
+  function decodeMiss(error) { return ['NotFoundException','ChecksumException','FormatException'].includes(error.getKind?.() || error.name); }
+  function createReader(z, video = false) {
+    const reader = new z.BrowserMultiFormatReader(undefined, { delayBetweenScanAttempts: 100, delayBetweenScanSuccess: 800 });
+    reader.possibleFormats = ['EAN_13','EAN_8','UPC_A','UPC_E','CODE_128','CODE_39','CODE_93','ITF','DATA_MATRIX','PDF_417'].map(format => z.BarcodeFormat[format]);
+    const qr = new z.BrowserQRCodeReader(), otherFormats = reader.decodeBitmap.bind(reader);
+    // Reuse one grayscale/binary frame; skip the broad barcode search when a QR code is found.
+    reader.decodeBitmap = bitmap => {
+      try { return qr.decodeBitmap(bitmap); }
+      catch (error) { if (!decodeMiss(error)) throw error; return otherFormats(bitmap); }
+    };
+    if (video) {
+      const decode = reader.decodeFromCanvas.bind(reader), canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d', {willReadFrequently:true}); let frame = 0;
+      reader.decodeFromCanvas = source => {
+        // Every third attempt keeps the original resolution for small/dense codes.
+        const scale = Math.min(1, 960 / Math.max(source.width, source.height));
+        if (scale === 1 || ++frame % 3 === 0) return decode(source);
+        const width = Math.max(1, Math.round(source.width * scale)), height = Math.max(1, Math.round(source.height * scale));
+        if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+        ctx.drawImage(source, 0, 0, width, height);
+        return decode(canvas);
+      };
+    }
     return reader;
   }
   function accept(s, text) {
@@ -77,12 +97,16 @@
     status(s, '请允许摄像头权限，将商品条形码或二维码放入取景区域。');
     let stream;
     try {
-      const z = await loadLibrary(); if (!active(s, task)) return;
+      // Handle a library failure immediately, even while camera permission is still pending.
+      const library = loadLibrary().then(z => ({z}), error => ({error}));
       stream = await window.POSCamera.stream();
       if (!active(s, task)) { stream.getTracks().forEach(track => track.stop()); return; }
       s.stream = stream;
       get('scanVideo').hidden = false; get('scanPlaceholder').hidden = true; get('scanStop').hidden = false;
-      const reader = createReader(z);
+      const loaded = await library;
+      if (!active(s, task)) { stream.getTracks().forEach(track => track.stop()); return; }
+      if (loaded.error) throw loaded.error;
+      const reader = createReader(loaded.z, true);
       const controls = await reader.decodeFromStream(stream, get('scanVideo'), (result, error, controls) => {
         if (!active(s, task)) { controls?.stop(); return; }
         if (result) accept(s, result.getText());
@@ -127,7 +151,7 @@
           const result = reader.decodeFromCanvas(canvas);
           accept(s, result.getText()); return;
         } catch (error) {
-          if (!['NotFoundException','ChecksumException','FormatException'].includes(error.getKind?.() || error.name)) throw error;
+          if (!decodeMiss(error)) throw error;
         }
         await new Promise(resolve => setTimeout(resolve, 0));
       }

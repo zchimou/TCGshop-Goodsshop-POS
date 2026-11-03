@@ -1,16 +1,18 @@
 # TCGshop POS
 
-面向零售店铺的收银与库存管理系统。当前源码版本为 **1.1.0**，Android 内部更新编号为 **36**。
+面向零售店铺的收银与库存管理系统。当前源码版本为 **1.1.2**，Android 内部更新编号为 **38**。
 
 ## 功能
 
 - 商品管理、封面压缩、扫码查找、常用商品及收款时定价。
+- 持续显示重复编码警告；扫码并行启动、二维码优先和原分辨率补扫；商品名称自动排序。
 - 分店库存、采购与出库、盘库数量和金额差异、负库存提示。
 - 销售及独立退款记录，按日期分组，记录列表仅显示人员名称。
 - 经营统计和扣除退货后的商品明细，适配手机、平板及折叠屏。
 - 管理员与店员权限、蓝牙 ESC/POS 配对、打印及小票样式设置。
 - NAS 静默实时通知、增量同步、图片独立存储和离线恢复。
 - 在线启动检查更新；发现更新后提示安装，离线继续使用。
+- 旧公网同步地址迁移，保留密钥、账号、账本和同步基线；内网及自定义地址保留。
 
 ## 目录
 
@@ -38,6 +40,8 @@ npm run preview
 npm test
 ```
 
+交接状态、已完成文件与待办参见 [HANDOFF.md](HANDOFF.md)。预订和官方支付尚处于方案阶段，未包含在当前版本中。
+
 可用 CHROME_PATH 指定现有 Chrome 可执行文件。独立的 verify-*.cjs 脚本覆盖账号、退款、盘库、同步、打印和布局；部分需要预览服务运行，Java 桥接检查需要 JAVA_HOME。打包资产检查需先构建 APK。
 
 ## Android 构建
@@ -48,9 +52,11 @@ Windows PowerShell 构建入口为 tcgshop-android/build-release.ps1，需要 JD
 
 ## NAS 部署与版本发布
 
-参见 [NAS 部署说明](tcgshop-server/NAS部署说明.md)。公开 Android 源码默认仅允许 HTTPS 网络连接，NAS 同步和更新服务需配置 HTTPS。Android 更新服务地址为示例 https://pos.example.com/tcgshop/api/update，部署前修改 tcgshop-android/app/src/main/java/com/tcgshop/pos/AppUpdates.java。
+参见 [NAS 部署说明](tcgshop-server/NAS部署说明.md)。公开 Android 源码默认仅允许 HTTPS 网络连接，NAS 同步和更新服务需配置 HTTPS。Android 更新服务地址为示例 https://pos.example.com/api/update，部署前修改 tcgshop-android/app/src/main/java/com/tcgshop/pos/AppUpdates.java。
 
 用 tcgshop-android/publish-update.ps1 的 -Apk、-ReferenceApk 和 -Output 生成发布清单；ReferenceApk 应是已部署的同签名版本。release-tools/deploy-nas-update.ps1 使用示例 NAS 地址、账号和目录，部署前填写实际配置，并保持工具与对应 NAS 更新 ZIP 在同一目录。-CheckOnly 仅做本地完整性检查。
+
+只发布 APK 时，使用 release-tools/push-update.ps1 和一键发布更新.cmd，优先 PowerShell 7；将对应发布 ZIP 放在同一目录，修改新旧更新 URL 和 SSH 示例配置。发布包根目录包含 publish-release.sh 和 release/，不需要重建容器。-CheckOnly 验证本地包，-VerifyOnly 验证公网清单及实际下载。发布工具不包含业务凭证或 APK。
 
 域名切换参见 [域名迁移说明](tcgshop-server/external/域名迁移说明.md)。迁移工具保留旧入口，新增 HTTPS 站点并检查新旧入口是否提供同一 NAS 版本；失败时恢复运行前的站点配置。
 

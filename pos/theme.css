@@ -103,6 +103,14 @@ dialog::backdrop {background: #26314966; backdrop-filter: blur(4px);}
 .dialog-head h2 {font-size: 19px;}
 .icon-button {background: var(--surface-soft); border-color: var(--line); border-radius: 12px;}
 .form-actions {border-top: 1px solid var(--line); padding-top: 16px;}
+.product-duplicate-warning{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;margin-bottom:18px;padding:16px;border:2px solid #c43945;border-left-width:6px;border-radius:12px;background:#fff1f2;color:#941f2b;overflow-wrap:anywhere;scroll-margin-top:80px}
+.product-duplicate-warning:focus{outline:3px solid #e9a6ad;outline-offset:2px}
+.product-warning-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#b92e3d;color:#fff;font-size:22px;font-weight:800;line-height:1}
+.product-duplicate-warning strong{display:block;font-size:17px;line-height:1.5}
+.product-duplicate-warning p{margin:6px 0;color:#941f2b;font-size:14px;line-height:1.6}
+.product-duplicate-warning small{display:block;color:#941f2b;line-height:1.6}
+.product-duplicate-warning button{margin-top:10px;min-height:40px;padding:8px 16px;border-color:#bd3543;background:#fff;color:#941f2b;font-weight:700}
+#pCode[aria-invalid="true"]{border:2px solid #c43945;background:#fff5f6;box-shadow:0 0 0 3px #c439451a}
 .toast {background: #303d5c; color: white; box-shadow: 0 8px 28px #26314920; border-radius: 12px;}
 .cover-editor {background: var(--surface-soft); border-color: #cdd5e7; border-radius: 14px;}
 .cover-thumb,.option-create {background: var(--accent-soft);}

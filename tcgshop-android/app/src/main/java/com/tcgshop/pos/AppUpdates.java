@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 
 /** Silent startup check; only a confirmed newer release opens the mandatory update dialog. */
 final class AppUpdates {
-    static final String ENDPOINT="https://pos.example.com/tcgshop/api/update";
+    static final String ENDPOINT="https://pos.example.com/api/update";
     private final Activity activity;
     private final Runnable ready;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
