@@ -1,6 +1,6 @@
 /* Printer preferences are device-local; receipts never change the ledger. */
 window.POSPrinter=(()=>{
- const key='TCGshop-POS-printer-v1',styleKey='TCGshop-POS-receipt-style-v1',pending=new Map();
+ const prefix=window.POSDemo?.prefix||'',key=prefix+'TCGshop-POS-printer-v1',styleKey=prefix+'TCGshop-POS-receipt-style-v1',pending=new Map();
  // Upgrade only the exact previous bundled logo; preserve custom uploads and removal.
  (async()=>{try{const raw=localStorage.getItem(styleKey);if(!raw)return;const saved=JSON.parse(raw);if(typeof saved.logo!=='string'||!saved.logo)return;const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(saved.logo));const hash=[...new Uint8Array(digest)].map(v=>v.toString(16).padStart(2,'0')).join('');if(hash==='a41565d201071d96f861683f94091b3afb5c12319fe825ddfdcc779b2e38312a'&&localStorage.getItem(styleKey)===raw){saved.logo=window.POSReceiptLogo;localStorage.setItem(styleKey,JSON.stringify(saved));}}catch{}})();
  let busy=false,status='尚未连接小票机',connectedAddress='';

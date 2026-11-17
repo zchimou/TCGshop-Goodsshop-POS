@@ -1,0 +1,15 @@
+const assert=require('assert/strict'),path=require('path'),{pathToFileURL}=require('url');
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH});
+ try{
+  const p=await browser.newPage({viewport:{width:1728,height:1062},timezoneId:'Asia/Shanghai'}),errors=[];p.on('pageerror',e=>errors.push(e.message));await require('./test-auth.cjs').prepare(p);await p.goto(pathToFileURL(path.join(__dirname,'index.html')).href);
+  await p.evaluate(()=>{POSSync.pause();transact(s=>{const item=s.products[0],actor=POSAuth.actor(),time=new Date().toISOString(),line={productId:item.id,name:item.name,sku:item.sku,code:item.code,qty:2,price:1500,cost:900};s.orders=[{id:'normal-test',time,actor,lines:[line],total:3000,discount:0,cost:1800,payment:'现金',cashReceived:5000,change:2000,refunded:false,refunds:[{id:'return-test',time,actor,note:'测试退货',amount:1500,cost:900,lines:[{lineIndex:0,qty:1,amount:1500,cost:900}]}]},{id:'pickup-test',pickupId:'pickup-layout',time,actor,lines:[{...line,qty:1}],total:1500,discount:0,cost:900,payment:'已收款',cashReceived:1500,change:0,refunded:false,refunds:[]}];s.expenses=[];});page='reports';reportFrom=reportTo=day();render();});
+  assert.deepEqual(await p.locator('.report-summary-stats .stat>span').allTextContents(),['净销售额','线下销售','预定销售','销售成本','经营支出','估算利润']);
+  assert.deepEqual(await p.locator('.report-summary-stats .stat>strong').allTextContents(),['¥30.00','¥15.00','¥15.00','¥18.00','¥0.00','¥12.00']);assert.equal(await p.locator('.report-pickup-summary').count(),0);assert.equal(await p.locator('#cashNet').textContent(),'¥15.00');
+  for(const [width,columns] of [[320,2],[390,2],[650,2],[850,2],[1100,3],[1500,6],[1728,6]]){await p.setViewportSize({width,height:1062});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow '+width);assert.equal(await p.locator('.report-summary-stats').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length),columns,'columns '+width);}
+  await p.screenshot({path:path.join(__dirname,'../tcgshop-server/out/report-summary-tablet.png'),animations:'disabled'});await p.setViewportSize({width:390,height:844});await p.screenshot({path:path.join(__dirname,'../tcgshop-server/out/report-summary-phone.png'),animations:'disabled'});
+  await p.locator('#prevDayReport').click();assert.deepEqual(await p.locator('.report-summary-stats .stat>strong').allTextContents(),Array(6).fill('¥0.00'));await p.locator('#todayReport').click();assert.equal(await p.locator('#reportNet').textContent(),'¥30.00');assert.equal(await p.locator('#regularNet').textContent(),'¥15.00');assert.equal(await p.locator('#pickupNet').textContent(),'¥15.00');
+  assert.deepEqual(errors,[]);console.log('PASS: six summary cards in requested order, combined net = onsite + redeemed pickup after refunds, unchanged cost/profit/cash, no extra pickup panel, seven viewport layouts and working date filters.');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

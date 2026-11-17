@@ -1,6 +1,6 @@
 /* A device preference is local to this installation, separate from the ledger. */
 window.POSCamera=(()=>{
- const key='TCGshop-POS-camera';
+ const key=(window.POSDemo?.prefix||'')+'TCGshop-POS-camera';
  const preferred=()=>{try{return localStorage.getItem(key)||''}catch{return ''}};
  async function stream(){
   if(!isSecureContext||!navigator.mediaDevices?.getUserMedia)throw Error('当前环境无法开启摄像头');

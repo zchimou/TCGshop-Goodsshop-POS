@@ -39,6 +39,8 @@ public class MainActivity extends Activity {
     private PermissionRequest cameraRequest;
     private boolean capturing=false;
     private String pendingBackup;
+    private byte[] pendingImage;
+    private static final int SAVE_IMAGE=16;
     private final Uri photoUri=Uri.parse("content://com.tcgshop.pos.cover/cover.jpg");
     private boolean local(Uri uri){return "https".equals(uri.getScheme())&&"appassets.androidplatform.net".equals(uri.getHost())&&(uri.getPort()==-1||uri.getPort()==443);}
     @Override public void onCreate(Bundle b){
@@ -163,6 +165,16 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void nasRequestV4(String id,String base,String path,String method,String token,String etag,String body,boolean compress){
             nasRequestV3(id,base,path,method,token,etag,body,compress);
         }
+        @JavascriptInterface public void saveImage(String name,String data){
+            if(name==null||data==null||!data.startsWith("data:image/png;base64,")||data.length()>3000000)return;
+            final byte[] bytes;try{bytes=android.util.Base64.decode(data.substring(22),android.util.Base64.DEFAULT);}catch(Exception e){return;}
+            runOnUiThread(()->{
+                if(web==null||web.getUrl()==null||!web.getUrl().startsWith(ORIGIN+"/assets/"))return;
+                if(pendingImage!=null){message("请先完成当前取货凭证保存");return;}
+                pendingImage=bytes;Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/png").putExtra(Intent.EXTRA_TITLE,name.replaceAll("[^a-zA-Z0-9._-]","_"));
+                try{startActivityForResult(i,SAVE_IMAGE);}catch(Exception e){pendingImage=null;message("无法打开图片保存位置选择器");}
+            });
+        }
         @JavascriptInterface public void saveBackup(String name,String text){
             if(text==null||text.length()>20000000)return;
             runOnUiThread(()->{
@@ -175,6 +187,11 @@ public class MainActivity extends Activity {
     }
     @Override protected void onActivityResult(int request,int result,Intent data){
         super.onActivityResult(request,result,data);
+        if(request==SAVE_IMAGE){byte[] bytes=pendingImage;pendingImage=null;
+            if(result==RESULT_OK&&data!=null&&data.getData()!=null&&bytes!=null){
+                new Thread(()->{try(OutputStream out=getContentResolver().openOutputStream(data.getData(),"wt")){if(out==null)throw new IOException();out.write(bytes);runOnUiThread(()->message("自提凭证已保存"));}catch(Exception e){runOnUiThread(()->message("图片保存失败，请重新保存"));}}).start();
+            }else message("已取消图片保存");return;
+        }
         if(request==PRINTER_PAIR){
             String id=pairingRequestId;pairingRequestId=null;
             // Settings does not report pairing success via resultCode. Read actual bonds.

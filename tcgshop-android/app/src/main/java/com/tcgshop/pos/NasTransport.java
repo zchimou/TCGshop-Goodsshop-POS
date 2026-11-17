@@ -26,7 +26,7 @@ public final class NasTransport {
             if(host==null||!("https".equals(scheme)||"http".equals(scheme))||uri.getRawUserInfo()!=null||uri.getRawQuery()!=null||uri.getRawFragment()!=null)throw new IOException("NAS 地址格式不正确");
             if("http".equals(scheme)&&!host.matches("localhost|127\\.0\\.0\\.1|10(?:\\.\\d{1,3}){3}|192\\.168(?:\\.\\d{1,3}){2}|172\\.(?:1[6-9]|2\\d|3[01])(?:\\.\\d{1,3}){2}"))throw new IOException("外网同步请使用 HTTPS");
             boolean image=path!=null&&path.matches("/api/images/[a-f0-9]{64}");
-            if(!("/api/health".equals(path)||"/api/shop".equals(path)||"/api/changes".equals(path)||"/api/events".equals(path)||image)||!("GET".equals(method)||"PUT".equals(method))||("PUT".equals(method)&&!("/api/shop".equals(path)||"/api/changes".equals(path)||image)))throw new IOException("不支持的同步请求");
+            if(!("/api/health".equals(path)||"/api/shop".equals(path)||"/api/changes".equals(path)||"/api/events".equals(path)||"/api/pickups".equals(path)||image)||!("GET".equals(method)||"PUT".equals(method))||("PUT".equals(method)&&!("/api/shop".equals(path)||"/api/changes".equals(path)||"/api/pickups".equals(path)||image)))throw new IOException("不支持的同步请求");
             if(token==null||token.length()<16||token.length()>512||token.indexOf('\r')>=0||token.indexOf('\n')>=0)throw new IOException("同步密钥格式不正确");
             if(etag==null||etag.length()>100||etag.indexOf('\r')>=0||etag.indexOf('\n')>=0)throw new IOException("版本标识格式不正确");
             byte[] bytes=body==null?new byte[0]:body.getBytes(StandardCharsets.UTF_8);if(bytes.length>LIMIT)throw new IOException("数据超过 20MB");

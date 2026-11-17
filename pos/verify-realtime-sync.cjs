@@ -46,7 +46,15 @@ const {createServer}=require('../tcgshop-server/server'),delta=require('./sync-d
   await sync(b);await sync(a);await sync(b);
   for(const p of [a,b]){assert.equal(await p.evaluate(()=>state.products[0].price),1450);assert.equal(await p.evaluate(()=>POSAuth.snapshot().users.find(u=>u.id==='audit-staff').enabled),false);assert.equal(await p.evaluate(()=>POSAuth.snapshot().users.find(u=>u.id==='audit-staff').hash),'4'.repeat(64));}
   // Version signals are silent. Remote changes arrive without manually pressing sync.
-  await b.evaluate(()=>POSSync.onResume());mark=requests.length;await sale(a);await sync(a);await b.waitForFunction(()=>state.orders.length===3,{},{timeout:15000});assert(requests.slice(mark).some(r=>r.path==='/api/events'&&r.status===200));
+  mark=requests.length;
+  await Promise.all([
+   b.waitForResponse(response=>response.url()===url+'/api/events'&&response.status()===200,{timeout:15000}),
+   (async()=>{
+    await b.evaluate(()=>POSSync.onResume());
+    await sale(a);await sync(a);
+    await b.waitForFunction(()=>state.orders.length===3,{},{timeout:15000});
+   })()
+  ]);
   assert.equal(requests.slice(mark).filter(r=>r.path.startsWith('/api/images/')).length,0);
   // A dialog/focused editor defers incoming application; the pending cart is preserved.
   await b.evaluate(()=>{addToCart('sample-1',1);modal('操作中','<input id="regression-input" value="暂存价格">');});await sale(a);await sync(a);await b.waitForTimeout(1800);assert.equal(await b.evaluate(()=>state.orders.length),3);assert.equal(await b.locator('#regression-input').inputValue(),'暂存价格');await b.evaluate(()=>$('dialog').close());await b.waitForFunction(()=>state.orders.length===4,{},{timeout:15000});assert.equal(await b.evaluate(()=>state.cart.length),1);

@@ -1,7 +1,7 @@
 ﻿param([string]$Apk='',[string]$Notes='修复与功能更新。',[string]$Output='',[string]$ReferenceApk='',[string]$SdkRoot = "$env:USERPROFILE\AppData\Local\Android\Sdk",[string]$JdkRoot = $env:JAVA_HOME)
 $ErrorActionPreference='Stop'
 $project=Split-Path $PSScriptRoot -Parent
-if(!$Apk){$Apk=Join-Path $project '安装包/TCGshop-POS-v1.1.2.apk'}
+if(!$Apk){$Apk=Join-Path $project '安装包/TCGshop-POS-v1.1.19.apk'}
 if(!$Output){$Output=Join-Path $project 'tcgshop-server/release'}
 $Apk=(Resolve-Path -LiteralPath $Apk).Path
 $jdk=$JdkRoot

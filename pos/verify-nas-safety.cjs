@@ -10,6 +10,16 @@ const {chromium}=require('playwright');
  await reset();await p.route('**/api/shop',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(changed)}));await p.evaluate(()=>POSSync.run());assert((await p.evaluate(()=>POSSync.status())).includes('ETag'));assert.equal(await p.evaluate(()=>state.store),local.store);
  await reset();await p.route('**/api/shop',r=>r.fulfill({status:200,headers:{ETag:'"fake"','Access-Control-Allow-Origin':'*','Access-Control-Expose-Headers':'ETag'},contentType:'application/json',body:'{"schema":"foreign"}'}));await p.evaluate(()=>POSSync.run());assert.equal(await p.evaluate(()=>state.store),local.store);assert((await p.evaluate(()=>POSSync.status())).includes('请升级 POS'));
  await reset();await p.exposeFunction('mockNativeFetch',async({base,path,method,token,etag,body})=>{const r=await fetch(base+path,{method,headers:{Authorization:'Bearer '+token,...(method==='PUT'?{'Content-Type':'application/json','If-Match':etag}:{})},...(method==='PUT'?{body}:{})});return {status:r.status,etag:r.headers.get('etag'),body:await r.json()};});await p.evaluate(()=>{window.NativePOS={nasRequest:(id,base,path,method,token,etag,body)=>mockNativeFetch({base,path,method,token,etag,body}).then(r=>POSSync.receiveNative(id,r))}});await p.evaluate(()=>transact(s=>s.store='通过安卓桥接上传'));await p.evaluate(()=>POSSync.run());assert.equal(JSON.parse(fs.readFileSync(file)).ledger.store,'通过安卓桥接上传');
+ // A failed snapshot migration must retain both the ledger and the legacy recovery copy.
+ await reset();await remoteWrite(changed);
+ const snapshotFailure=await p.evaluate(async()=>{
+  const savedLedger=localStorage.getItem(KEY),old='legacy-recovery-fixture',open=IDBFactory.prototype.open;
+  localStorage.setItem('TCGshop-POS-nas-recovery',old);
+  IDBFactory.prototype.open=function(name,...args){if(name==='TCGshop-POS-recovery')throw Error('模拟存储故障');return open.call(this,name,...args);};
+  try{await POSSync.run();return [POSSync.status(),await POSSync.recovery()===old,localStorage.getItem(KEY)===savedLedger];}
+  finally{IDBFactory.prototype.open=open;}
+ });assert(snapshotFailure[0].includes('快照'));assert.deepEqual(snapshotFailure.slice(1),[true,true]);
+ await p.evaluate(()=>POSSync.run());assert.equal(await p.evaluate(()=>localStorage.getItem('TCGshop-POS-nas-recovery')),null);
  // Opening an editor during a request must defer applying the download.
  await reset();await remoteWrite(changed);let releaseEditor,enteredEditor;const waitingEditor=new Promise(r=>enteredEditor=r);
  await p.evaluate(()=>delete window.NativePOS);

@@ -1,13 +1,13 @@
 {
   "name": "tcgshop-pos",
-  "version": "1.1.2",
+  "version": "1.1.19",
   "private": true,
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "preview": "node pos/serve.cjs",
-    "test": "node pos/verify-domain-settings.cjs && node pos/verify-product-duplicates.cjs && node pos/verify-scanner-performance.cjs && node pos/verify-report-net-items.cjs && node pos/verify-sync-merge.cjs && node tcgshop-server/verify-publisher.cjs && node pos/verify-history-layout.cjs && node pos/verify-realtime-sync.cjs"
+    "test": "node pos/verify-domain-settings.cjs && node pos/verify-product-duplicates.cjs && node pos/verify-scanner-performance.cjs && node pos/verify-report-net-items.cjs && node pos/verify-sync-merge.cjs && node tcgshop-server/verify-publisher.cjs && node pos/verify-history-layout.cjs && node pos/verify-realtime-sync.cjs && node pos/verify-cart-pockets.cjs && node tcgshop-server/verify-pickups.cjs && node tcgshop-server/verify-packing-web.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

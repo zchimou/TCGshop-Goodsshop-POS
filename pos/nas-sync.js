@@ -1,5 +1,6 @@
 /* Version-checked sync: concurrent edits are merged by immutable record id. */
 window.POSSync=(()=>{
+ if(window.POSDemo?.active)return POSDemo.localSync();
  const cfgKey='TCGshop-POS-nas-config-v1',idKey='TCGshop-POS-store-id',accountKey='TCGshop-POS-accounts-v1',basePrefix='TCGshop-POS-nas-base:',recoveryKey='TCGshop-POS-nas-recovery';
  localStorage.removeItem('TCGshop-POS-device-v1');
  let busy=false,paused=false,generation=0,timer,retry,poll,status='未设置同步',conflict=null,configEpoch=0,healthCache=null,lastCheckAt=0,liveRunning=false,liveTimer,liveTag='',liveEpoch=0;const nativePending=new Map();
@@ -50,14 +51,16 @@ window.POSSync=(()=>{
   open.onblocked=()=>reject(Error('快照数据库被其他窗口占用，请关闭其他窗口后重试'));
   open.onsuccess=()=>{const db=open.result;let tx;try{tx=db.transaction('snapshots',mode);const store=tx.objectStore('snapshots'),req=mode==='readwrite'?store.put(value,'latest'):store.get('latest');tx.oncomplete=()=>{db.close();resolve(req.result);};tx.onabort=()=>{db.close();reject(tx.error||Error('快照保存已取消'));};tx.onerror=()=>{};}catch(e){db.close();reject(e);}};
  });}
- async function recovery(){POSAuth.requireAdmin();const saved=await recoveryStore('readonly');return saved||localStorage.getItem(recoveryKey);}
+ async function recovery(){
+  POSAuth.requireAdmin();
+  try{return (await recoveryStore('readonly'))||localStorage.getItem(recoveryKey);}
+  catch(error){const legacy=localStorage.getItem(recoveryKey);if(legacy)return legacy;throw error;}
+ }
  async function protect(local,remotePayload){
   const raw=JSON.stringify({schema:'tcgshop-pos-sync-recovery-v1',time:new Date().toISOString(),local,remote:remotePayload||null});
-  // Old releases stored a full snapshot in localStorage. Remove that duplicate
-  // before opening the IndexedDB transaction so an already-full WebView quota
-  // cannot prevent the new snapshot from being written.
-  localStorage.removeItem(recoveryKey);
   try{await recoveryStore('readwrite',raw);}catch(e){throw Error('无法保存同步前快照，已停止同步；请检查设备剩余空间后重试');}
+  // Keep the last recoverable copy until the IndexedDB transaction commits.
+  localStorage.removeItem(recoveryKey);
  }
  function setBase(c,payload,etag,hash){localStorage.setItem(baseKey(c),JSON.stringify({hash,etag,storeId:payload.storeId}));localStorage.setItem(idKey,payload.storeId);}
  async function saveBase(c,payload,etag,hash){setBase(c,payload,etag,hash);await POSAssets.baseline(c.url,{etag,payload});}
@@ -108,10 +111,20 @@ window.POSSync=(()=>{
  }
 
  function apply(c,payload,etag,hash){
-  POSSyncCore.validate(payload);POSAuth.validateSnapshot(payload.accounts);const incoming=clone(payload.ledger);const wanted=POSAuth.user()?.role==='staff'?(payload.accounts.users.find(u=>u.id===POSAuth.user().id)?.shopId||'shop-main'):state.activeShopId;POSSyncCore.activate(incoming,incoming.shops.some(b=>b.id===wanted)?wanted:incoming.shops[0].id);const next=validate(incoming);next.cart=(next.activeShopId===state.activeShopId?state.cart:[]).filter(l=>next.products.some(p=>p.id===l.productId&&!p.deleted)).map(l=>({...l}));const subtotal=next.cart.reduce((n,l)=>n+cartUnitPrice(l,next.products.find(p=>p.id===l.productId))*l.qty,0);next.discount=next.activeShopId===state.activeShopId?Math.min(state.discount,subtotal):0;next.payment=state.payment;validate(next);
+  POSSyncCore.validate(payload);POSAuth.validateSnapshot(payload.accounts);const incoming=clone(payload.ledger);const wanted=POSAuth.user()?.role==='staff'?(payload.accounts.users.find(u=>u.id===POSAuth.user().id)?.shopId||'shop-main'):state.activeShopId;POSSyncCore.activate(incoming,incoming.shops.some(b=>b.id===wanted)?wanted:incoming.shops[0].id);
+  const next=incoming,sameLedger=localStorage.getItem(idKey)===payload.storeId;
+  const drafts={...state,cartPockets:clone(state.cartPockets||[])};
+  if(sameLedger&&next.activeShopId!==drafts.activeShopId)parkCart(drafts);
+  next.cartPockets=sameLedger?drafts.cartPockets:[];
+  next.cartLabel=sameLedger?drafts.cartLabel:'';
+  const products=new Map(next.products.filter(p=>!p.deleted).map(p=>[p.id,p]));
+  next.cart=(sameLedger?drafts.cart:[]).filter(l=>products.has(l.productId)).map(l=>({...l}));
+  const subtotal=next.cart.reduce((n,l)=>n+cartUnitPrice(l,products.get(l.productId))*l.qty,0);
+  next.discount=sameLedger?Math.min(drafts.discount,subtotal):0;
+  next.payment=state.payment;validate(next);
   const entries=[[KEY,POSAssets.serialize(next)],[accountKey,JSON.stringify(payload.accounts)],[baseKey(c),JSON.stringify({hash,etag,storeId:payload.storeId})],[idKey,payload.storeId]],previous=entries.map(([k])=>[k,localStorage.getItem(k)]);
   try{for(const [k,v] of entries)localStorage.setItem(k,v);}catch(e){for(const [k,v] of previous){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch{}}throw Error('本机保存失败，NAS 数据未覆盖当前账本');}
-  ledgerRaw=entries[0][1];state=next;readOnly=false;generation++;conflict=null;POSAuth.reloadSnapshot();if(POSAuth.user())render();
+  ledgerRaw=entries[0][1];state=next;readOnly=false;generation++;conflict=null;POSAuth.reloadSnapshot();
  }
  function editing(){const focus=document.activeElement;return !!document.querySelector('dialog[open]')||!!(focus&&(focus.matches('input,textarea,select')||focus.isContentEditable));}
  function changed(){generation++;conflict=null;if(config().edit&&POSAuth.user()){setStatus('已保存本机，等待同步');clearTimeout(timer);timer=setTimeout(()=>run('auto'),1000);}}
@@ -199,5 +212,13 @@ window.POSSync=(()=>{
  function wireIndicator(){const el=$('nasIndicator');if(!el)return;el.onclick=()=>{if(busy)return;run('manual').catch(e=>{setStatus('同步未完成：'+e.message);toast(e.message);});};}
  async function start(){try{await migrateDomain();}catch(e){setStatus('同步地址迁移未完成：'+e.message);return;}const c=config();wireIndicator();setStatus(c.url?'等待同步':'未设置同步');window.addEventListener('online',onLogin);window.addEventListener('pospause',pause);document.addEventListener('focusout',queueCheck);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')onResume();else pause();});onLogin();}
  async function restoreLedger(ledger){await migrateDomain();const c=config(),r=await POSAssets.hydrate({ledger},async id=>{if(!c.url||!c.token)throw Error('图片缓存缺失，请连接原 NAS 恢复');return (await request(c,'/api/images/'+id)).body.data;});await POSAssets.cacheLedger(r.ledger);return r.ledger;}
- return {restoreLedger,recovery,panel,wirePanel,gateControls,wireGate,changed,onLogin,onPage,onResume,pause,cancel,start,run,receiveNative,connectDialog,status:()=>status,isBusy:()=>busy};
+ async function pickupRequest(body){
+  await migrateDomain();const user=POSAuth.requireUser(),c=config();
+  if(!c.url||!c.token)throw Error('请先在数据与设置中连接 NAS，自提打包和核销需要联网');
+  if(navigator.onLine===false)throw Error('当前离线，联网后才能确认自提订单');
+  if(busy)throw Error('正在同步，请稍后重试');busy=true;
+  try{const features=await capabilities(c);if(features.pickups!==1)throw Error('NAS 尚未支持自提，请先更新同步服务');if(['create','setRaffle'].includes(body.action)&&features.manualRaffle!==1)throw Error('NAS 尚未支持手动抽奖码，请先更新同步服务');if(body.action==='clearRaffle'&&features.clearRaffle!==1)throw Error('NAS 尚未支持批量清空抽奖码，请先更新同步服务');return (await request(c,'/api/pickups','PUT','',{...body,actorId:user.id})).body;}
+  finally{busy=false;}
+ }
+ return {pickup:pickupRequest,restoreLedger,recovery,panel,wirePanel,gateControls,wireGate,changed,onLogin,onPage,onResume,pause,cancel,start,run,receiveNative,connectDialog,status:()=>status,isBusy:()=>busy};
 })();

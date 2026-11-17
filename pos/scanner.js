@@ -179,15 +179,17 @@
     window.addEventListener('pagehide',dispose);
   }
   window.ProductCodeScanner = {
+    library:loadLibrary,
     openSearch(onResult){this.open(null,onResult);},
     openInventory(onResult){this.open(null,onResult,'inventory');},
     open(input, onResult, mode) {
       ensureDialog(); dispose();
       session = {input,onResult,task:0,stream:null,controls:null,url:null};
-      get('scanTitle').textContent=input?'扫描商品条码':'扫码搜索商品';
-      dialog.querySelector('.sub').textContent=input?'识别后填入商品编码':'识别已入库商品后加入当前订单';
-      dialog.querySelector('.hint').textContent=input?'图像仅在本机处理。识别后填入商品编码。':'图像仅在本机处理。仅添加已入库商品，未入库的码只提醒。';
-      if(mode==='inventory'){get('scanTitle').textContent='扫描查找商品';dialog.querySelector('.sub').textContent='识别后打开商品编辑页';dialog.querySelector('.hint').textContent='图像仅在本机处理，支持商品编码与 SKU。';}
+      get('scanTitle').textContent=input?'扫描商品条码':'扫描商品或提货码';
+      dialog.querySelector('.sub').textContent=input?'识别后填入商品编码':'扫描商品加入订单，扫描提货码核销本店预订单';
+      dialog.querySelector('.hint').textContent=input?'图像仅在本机处理。识别后填入商品编码。':'图像仅在本机处理。支持商品编码和本店提货码；核销前需确认已收款。';
+      get('scanPlaceholder').querySelector('b').textContent=input?'对准商品包装上的条码':'对准商品条码或提货二维码';
+      if(mode==='inventory'){get('scanTitle').textContent='扫一扫';dialog.querySelector('.sub').textContent='扫描商品进入编辑，扫描自提码核销本店订单';dialog.querySelector('.hint').textContent='支持商品编码、SKU 和本店自提二维码。';}
       dialog.showModal(); stopTask(session);
       startCamera();
     }

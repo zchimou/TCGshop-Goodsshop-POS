@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#5261a6"><title>自提打包管理 · TCGshop POS</title><link rel="stylesheet" href="/api/packing/style.css"></head>
+<body>
+<header class="top"><a href="/api/packing" class="brand"><span class="mark">T</span><span>自提打包管理<small>TCGshop POS · 管理员专用</small></span></a><div id="account" hidden><span id="adminName"></span><button id="logout" type="button">退出登录</button></div></header>
+<main>
+ <section id="loginPanel" class="login panel"><span class="eyebrow">管理员工作台</span><h1>登录后开始打包</h1><p class="hint">使用已同步到 NAS 的管理员账号和密码。</p><form id="loginForm"><label>管理员账号<input id="username" name="username" autocomplete="username" maxlength="32" required></label><label>密码<input id="password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></label><p id="loginError" class="error" role="alert"></p><button id="loginButton" class="primary" type="submit">登录打包页面</button></form></section>
+ <section id="workspace" hidden>
+  <div class="heading"><div><span class="eyebrow">商品自提</span><h1>新建预订单</h1><p class="hint">选择商品和取货门店，生成包含商品明细的提货凭证。</p></div><button id="refresh" type="button">刷新商品与库存</button></div>
+  <div class="layout">
+   <section class="panel catalog"><div class="section-heading"><h2>选择商品</h2><span id="productCount" class="hint"></span></div><label class="search-label">搜索商品<input id="search" type="search" placeholder="商品名称或 SKU" autocomplete="off"></label><div id="products" class="products"></div></section>
+   <section class="panel order"><h2>打包清单</h2><form id="packForm"><label>自提店铺<select id="shop" required></select></label><label>取货人 / 备注（可选）<input id="note" maxlength="200" placeholder="方便识别这张预订单"></label><label>抽奖码（手动填写，可暂留空）<input id="raffleCode" inputmode="numeric" pattern="[1-9][0-9]{0,8}" maxlength="9" placeholder="留空则暂不分配，不会自动生成"></label><div id="draft" class="draft"></div><div class="total"><span id="quantity">共 0 件</span><strong id="amount">¥0.00</strong></div><p class="hint">生成预订单不扣实际库存、不计入销售。到店核销后生成销售小票。</p><p id="packError" class="error" role="alert"></p><button id="create" class="primary" type="submit">生成预订单及提货码</button></form></section>
+  </div>
+  <section id="result" class="panel result" hidden><div class="section-heading"><div><span class="eyebrow">打包完成</span><h2>提货凭证</h2></div><div class="result-actions"><button id="cancelOrder" class="danger" type="button" hidden>取消预订单</button><button id="saveVoucher" class="primary" type="button">保存提货凭证图片</button></div></div><p class="hint">图片包含提货二维码、门店、商品名称、SKU、数量、单价和总金额。</p><div id="voucher"></div><p id="saveStatus" class="hint" role="status"></p><div id="savedImages" class="saved-images"></div></section>
+  <section class="panel history"><div class="section-heading"><h2>最近预订单</h2><span class="hint">可重新打开提货凭证</span></div><div id="orders"></div></section>
+ </section>
+</main><div id="notice" class="notice" role="status" hidden></div>
+<script defer src="/api/packing/vendor/zxing-browser-0.2.1.min.js"></script><script defer src="/api/packing/voucher.js"></script><script defer src="/api/packing/app.js"></script>
+</body></html>

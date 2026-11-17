@@ -1,6 +1,6 @@
 /* Local installation accounts. Passwords are salted PBKDF2 hashes, never plaintext. */
 window.POSAuth=(()=>{
- const key='TCGshop-POS-accounts-v1',sessionKey='TCGshop-POS-device-session-v1',iterations=600000;
+ const prefix=window.POSDemo?.prefix||'',key=prefix+'TCGshop-POS-accounts-v1',sessionKey=prefix+'TCGshop-POS-device-session-v1',iterations=600000;
  let store=null,storeError='',session=null,gateBusy=false,gateEpoch=0;
  const hex=bytes=>Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
  const bytes=h=>Uint8Array.from(h.match(/../g),x=>parseInt(x,16));
@@ -24,7 +24,7 @@ window.POSAuth=(()=>{
  function requireAdmin(){const u=requireUser();if(u.role!=='admin')throw Error('此操作仅管理员可用');return u;}
  function actor(){const u=requireUser();return {id:u.id,username:u.username,name:u.name};}
  function write(next,base){if(localStorage.getItem(key)!==base)throw Error('账号资料已在其他窗口变化，请重新登录后操作');checkStore(next);localStorage.setItem(key,JSON.stringify(next));store=next;window.POSSync?.changed();}
- function logout(){window.POSSync?.cancel();session=null;localStorage.removeItem(sessionKey);gateEpoch++;gateBusy=false;$('authScreen').innerHTML='';document.querySelectorAll('dialog[open]').forEach(d=>d.close());navigationOpen=mobileCartOpen=false;page='pos';query='';$('main').innerHTML='';render();}
+ function logout(){if(window.POSDemo?.active){POSDemo.exit();return;}window.POSSync?.cancel();session=null;localStorage.removeItem(sessionKey);gateEpoch++;gateBusy=false;$('authScreen').innerHTML='';document.querySelectorAll('dialog[open]').forEach(d=>d.close());navigationOpen=mobileCartOpen=false;page='pos';query='';$('main').innerHTML='';render();}
  function unlock(u){gateBusy=false;localStorage.setItem(sessionKey,JSON.stringify({id:u.id,stamp:u.salt}));session={id:u.id,hash:u.hash};gateEpoch++;document.body.classList.remove('auth-locked');$('authScreen').hidden=true;$('authScreen').innerHTML='';page='pos';render();window.scrollTo(0,0);window.POSSync?.onLogin();}
  function renderGate(){
   document.body.classList.add('auth-locked');document.body.classList.remove('has-pos','cart-open','navigation-open');$('authScreen').hidden=false;$('main').innerHTML='';

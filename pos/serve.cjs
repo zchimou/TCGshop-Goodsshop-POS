@@ -1,5 +1,7 @@
 const http=require('http'),fs=require('fs'),path=require('path');
 const allowed={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/app.js':'app.js','/auth.js':'auth.js','/shops.js':'shops.js','/sync-core.js':'sync-core.js','/nas-sync.js':'nas-sync.js','/camera.js':'camera.js','/scanner.js':'scanner.js','/product-editor.js':'product-editor.js','/refunds.js':'refunds.js','/vendor/zxing-browser-0.2.1.min.js':'vendor/zxing-browser-0.2.1.min.js'};
+allowed['/pickup-voucher.js']='pickup-voucher.js';allowed['/pickup-logo.js']='pickup-logo.js';allowed['/pickup.js']='pickup.js';allowed['/pickup-core.js']='pickup-core.js';
+for(const name of ['raffle.js','demo-workspace.js','demo-controls.js','demo-pickups.js'])allowed['/'+name]=name;
 allowed['/theme.css']='theme.css';allowed['/printer.js']='printer.js';allowed['/loyverse-import.js']='loyverse-import.js';
 allowed['/receipt-codes.js']='receipt-codes.js';
 allowed['/sync-delta.js']='sync-delta.js';allowed['/sync-assets.js']='sync-assets.js';
